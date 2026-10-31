@@ -380,14 +380,27 @@ body.show-notes .notes::before{
     <aside class="notes">Point to README 'Local Mode' — everything on this slide runs free on their own computer, no account needed for the first three. (The last line is prose, not a command — so it gets no Copy button.)</aside>
   </section>
 
-  <!-- ============ SLIDE 12 · QUIZ ============ -->
+  <!-- ============ SLIDE 12 · PROOF (this lab's real pipeline) ============ -->
+  <section class="slide">
+    <h1>Proof: the robots really ran 🏁</h1>
+    <p class="mid">Not a cartoon this time — this is the lab you just built, doing it for real.</p>
+    <ul class="cmd-list">
+      <li>📦 The code: <b>github.com/fontvu/cicd-lab</b></li>
+      <li>🤖 The robots: <b>github.com/fontvu/cicd-lab/actions</b> — 4 jobs, all green ✅</li>
+      <li>⏭️ The gate: a run from any branch <b>other than main</b> — Lint ✅ Test ✅ Build ✅ and Deploy <b>skipped</b> (grey). That grey box IS the gate.</li>
+      <li>🚚 Delivered: <b>fontvu.github.io/cicd-lab</b> — and <b>/BUILD_INFO.json</b> shows the commit the robots actually built</li>
+    </ul>
+    <aside class="notes">Presenter script: click Actions in the repo, open the newest green run — four jobs, four checkmarks, top to bottom. Then open any non-main run: three green and one grey "skipped". Ask the kids: "did the truck leave?" No — because it was not main. Same code, same robots, different door. The BUILD_INFO.json trick is worth pointing out: the live site can tell you which commit it came from, so "it works on my machine" becomes checkable.</aside>
+  </section>
+
+  <!-- ============ SLIDE 13 · QUIZ ============ -->
   <section class="slide">
     <h1>Quiz time 🧠 — tap an answer</h1>
     <div id="quiz"></div>
     <aside class="notes">Ask the kids to shout an answer BEFORE tapping. Wrong answers are funny, not shameful — that's the point of a quiz. Right answers lock the question green; wrong ones shake and let you try again.</aside>
   </section>
 
-  <!-- ============ SLIDE 13 · RECAP ============ -->
+  <!-- ============ SLIDE 14 · RECAP ============ -->
   <section class="slide">
     <h1>Recap 🎓</h1>
     <ul class="bullets">
@@ -429,7 +442,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /* ============================================================
    1) SLIDE NAVIGATION (buttons, dots, counter, top bar)
    ============================================================ */
-const slides = Array.from(document.querySelectorAll('.slide')); // the 13 <section>s
+const slides = Array.from(document.querySelectorAll('.slide')); // every .slide in the document (count them; add one and the dots follow)
 const dotsWrap = $('#dots');
 const counterEl = $('#counter');
 const topbar = $('#topbar');
@@ -582,7 +595,12 @@ function resetUI() {
   truck.style.left = '-10%';
   void truck.offsetWidth; // force reflow so the next .drive animates fresh
   truck.style.transition = '';
-  confettiZone.replaceChildren(); // sweep away any old confetti bits
+  // Sweep away old confetti bits — but ONLY the bits. The road and the
+  // truck live inside this same box, and wiping all children would delete
+  // them; the next run would then have no truck to drive. (Trap worth
+  // knowing: "clear the container" is rarely what you want when the
+  // container also holds permanent scenery.)
+  confettiZone.querySelectorAll('.confetti').forEach((bit) => bit.remove());
 }
 
 // Run stage i, then i+1, then i+2 … sequentially. This IS the pipeline.
@@ -654,8 +672,11 @@ function confetti() {
     bit.style.animationDelay = (Math.random() * 0.5) + 's';     // stagger the burst
     confettiZone.appendChild(bit);
   }
-  // After the party (2.8s fall + up to 0.5s delay), sweep up.
-  setTimeout(() => confettiZone.replaceChildren(), 3200);
+  // After the party (2.8s fall + up to 0.5s delay), sweep up the bits only —
+  // never the road and truck, which are permanent residents of this box.
+  setTimeout(() => {
+    confettiZone.querySelectorAll('.confetti').forEach((bit) => bit.remove());
+  }, 3200);
 }
 
 /* ============================================================
