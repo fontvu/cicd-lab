@@ -741,8 +741,16 @@ function goTo(n) {
   }
 }
 // Deep link: #7 opens slide 7. Also fires when someone edits the hash.
+// ?slide=7 works too — handy for share links (and for screenshot tools
+// that drop the fragment).
+function targetSlideFromUrl() {
+  const fromHash = parseInt(String(location.hash).replace('#', ''), 10);
+  if (Number.isFinite(fromHash)) return fromHash;
+  const fromQuery = parseInt(new URLSearchParams(location.search).get('slide') || '', 10);
+  return Number.isFinite(fromQuery) ? fromQuery : 1;
+}
 function slideFromHash() {
-  const n = parseInt(String(location.hash).replace('#', ''), 10);
+  const n = targetSlideFromUrl();
   if (!Number.isFinite(n)) return;
   const idx = Math.max(0, Math.min(slides.length - 1, n - 1));
   if (idx !== current) goTo(idx); // guard: never loop back into goTo
