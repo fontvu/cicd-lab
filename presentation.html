@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>🤖 CI/CD: The Robot Kitchen 🚚 — a kid-friendly deck</title>
+<title>🚀 CI/CD — from commit to production</title>
 <style>
 /* ============================================================
-   CI/CD kid deck — ONE file, ZERO network. Everything (CSS + JS)
+   CI/CD deck — ONE file, ZERO network. Everything (CSS + JS)
    lives here so the deck works offline, even from file://.
+   Audience: developers in their first job, or career changers.
    Palette: warm cream paper, ink text, and the lab's status
    colors (green = go, red = stop, amber = working).
    ============================================================ */
@@ -36,7 +37,7 @@ body{
   background:var(--cream);
   color:var(--ink);
   font-family:system-ui,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
-  font-size:1.4rem;               /* kid-big base text */
+  font-size:1.4rem;               /* comfortable base text */
   line-height:1.45;
 }
 
@@ -234,13 +235,76 @@ body.show-notes .notes::before{
 .q-feedback.good{color:var(--green)}
 .q-feedback.bad{color:var(--red)}
 
+/* ---------- intern-level slides: columns, tables, badges, code ---------- */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:min(1120px,94vw);text-align:left}
+.cols .card{font-size:1.06rem;line-height:1.4}
+.cols .card p{margin:.3em 0}
+.tbl{
+  width:min(1020px,94vw);border-collapse:collapse;background:var(--paper);
+  border:2px solid var(--border);border-radius:14px;overflow:hidden;
+  font-size:1rem;text-align:left;
+}
+.tbl th,.tbl td{border-bottom:1px solid var(--border);padding:7px 12px;vertical-align:top}
+.tbl th{background:#fdf3dc;font-weight:800}
+.tbl tr:last-child td{border-bottom:0}
+.badge{
+  display:inline-block;padding:.1em .65em;border-radius:999px;
+  font-size:.82rem;font-weight:800;border:2px solid;margin-right:.3em;white-space:nowrap;
+}
+.badge.g{background:#dafbe1;border-color:var(--green);color:#0b3d1e}
+.badge.r{background:#ffebe9;border-color:var(--red);color:#5c1015}
+.badge.a{background:#fff8e1;border-color:var(--amber);color:#7c4a03}
+.code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  background:var(--term-bg);color:var(--term-ink);
+  padding:12px 16px;border-radius:12px;text-align:left;
+  font-size:.92rem;line-height:1.55;margin:.4em 0;overflow-x:auto;
+  max-width:min(980px,94vw);white-space:pre;
+}
+.code .k{color:#79c0ff}   /* YAML keys  */
+.code .s{color:#ffa657}   /* strings    */
+.code .c{color:#8b949e}   /* comments   */
+
+/* ---------- CSS-only tabs: interactive, zero JavaScript ---------- */
+.tabs{width:min(1020px,94vw)}
+.tabs input{position:absolute;opacity:0;pointer-events:none}
+.tab-labels{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.tab-labels label{
+  cursor:pointer;border:2px solid #8a6d3b;background:#fff;border-radius:999px;
+  padding:.4em 1.15em;font-size:1.1rem;font-weight:700;min-height:44px;
+  display:inline-flex;align-items:center;
+}
+.tab-labels label:hover{background:#fff3dd}
+.panel{
+  display:none;background:var(--paper);border:2px solid var(--border);
+  border-radius:18px;padding:16px 24px;box-shadow:0 6px 18px rgba(124,45,18,.08);
+}
+#tab-pr:checked    ~ .tab-labels label[for="tab-pr"],
+#tab-push:checked  ~ .tab-labels label[for="tab-push"],
+#tab-manual:checked~ .tab-labels label[for="tab-manual"]{
+  background:var(--amber);color:#fff;border-color:var(--amber);
+}
+#tab-pr:checked    ~ .tab-panels .panel-pr,
+#tab-push:checked  ~ .tab-panels .panel-push,
+#tab-manual:checked~ .tab-panels .panel-manual{display:block}
+
 /* ---------- short projectors / narrow windows ---------- */
 @media (max-width:900px){
   .sim-mid{grid-template-columns:1fr}
+  .cols{grid-template-columns:1fr}
   .confetti-zone{min-height:170px}
 }
+/* 820px catches 768p projectors and 1366x768 laptops — the most common
+   "it looked fine on my laptop" resolution gap. */
+@media (max-height:820px){
+  body{font-size:1.18rem}
+  .slide.active{padding:14px 22px 92px}
+  .tbl{font-size:.92rem}
+  .code{font-size:.84rem}
+  .cols .card{font-size:.98rem}
+}
 @media (max-height:760px){
-  body{font-size:1.2rem}
+  body{font-size:1.12rem}
   #sim-log{max-height:110px}
   .confetti-zone{min-height:170px}
   .stage{min-width:104px;padding:6px 8px}
@@ -251,88 +315,195 @@ body.show-notes .notes::before{
 <div id="topbar" aria-hidden="true"></div>
 
 <main id="deck">
-
   <!-- ============ SLIDE 1 · TITLE ============ -->
-  <section class="slide active">
-    <h1>🤖 CI/CD: The Robot Kitchen 🚚</h1>
-    <p class="big">How your code goes from your laptop to the whole world — checked and delivered by robots.</p>
-    <p class="small">A beginner's tour · press → to start</p>
-    <aside class="notes">Welcome! In 5 minutes you'll know what CI/CD means and you'll drive a real pipeline yourself. Everything today is about one idea: robots check the work, robots deliver it, and broken stuff never reaches friends.</aside>
+  <section class="slide">
+    <h1>🚀 CI/CD — from commit to production</h1>
+    <p class="mid">A guided tour of the pipeline in this repo: what runs, what it protects you from, and what actually breaks in the real world.</p>
+    <p class="small">22 slides · interactive · press → to start</p>
+    <aside class="notes">Frame the session: this is not a tool tour, it is a decision tour. Every stage answers one question — "what could go wrong here, and who catches it?" The yellow robot work happens in a separate repo (the lab); this deck explains the reasoning you would be asked to defend in a code review.</aside>
   </section>
 
-  <!-- ============ SLIDE 2 · THE OLD PAINFUL WAY ============ -->
+  <!-- ============ SLIDE 2 · WHY PIPELINES EXIST ============ -->
   <section class="slide">
-    <h1>The OLD way 😫</h1>
+    <h1>Why pipelines exist</h1>
     <ul class="bullets">
-      <li>You code late at night 🦉</li>
-      <li>You upload files by hand, one by one 📁</li>
-      <li>You forget ONE tiny file 🙈</li>
-      <li>The site breaks in front of everyone 💥</li>
-      <li>You fix it at 2am 😴</li>
+      <li><b>Integration hell</b> — 40 people merge into one branch; main breaks daily, and everyone blames "someone else's" commit.</li>
+      <li><b>Manual release</b> — the same 12 steps every Friday; forget one file and Friday is broken.</li>
+      <li><b>Slow feedback</b> — the bug is found by a user, three days after the commit.</li>
     </ul>
-    <p class="big">Deploy day = scary day.</p>
-    <aside class="notes">Ask: who has ever packed a bag and forgotten something? That's what deploying by hand feels like, but the whole school can see the mistake. This pain is WHY we let robots do it.</aside>
+    <div class="mapping">Every stage of a pipeline exists to <b>attack one of these three</b>. When a stage has no failure mode it protects against, it is ceremony — delete it.</div>
+    <aside class="notes">Ask the room: how many manual steps does your release have? That number is your risk surface. CI/CD is not about speed for its own sake — it is about shrinking the number of things a human can forget.</aside>
   </section>
 
-  <!-- ============ SLIDE 3 · CI/CD IN ONE SENTENCE ============ -->
+  <!-- ============ SLIDE 3 · VOCABULARY ============ -->
   <section class="slide">
-    <h1>CI/CD in one sentence</h1>
-    <p class="big">Robots check every change (CI) and robots deliver it (CD) — broken stuff never reaches friends.</p>
-    <p class="def">CI = Continuous Integration = robot inspectors 🔍</p>
-    <p class="def">CD = Continuous Delivery = the delivery truck 🚚</p>
-    <aside class="notes">This is the whole talk on one slide — say it twice. CI is the inspectors, CD is the truck. Everything after this slide is just that sentence in detail.</aside>
+    <h1>The vocabulary you will be asked about</h1>
+    <table class="tbl">
+      <tr><th>Term</th><th>What it actually means</th></tr>
+      <tr><td><b>CI</b> — Continuous Integration</td><td>Every change is verified automatically (lint + test) <i>before</i> it is allowed to merge.</td></tr>
+      <tr><td><b>Continuous Deployment</b></td><td>Green on <code>main</code> → it ships, unattended.</td></tr>
+      <tr><td><b>Continuous Delivery</b></td><td>Green on <code>main</code> → it is <i>ready</i> to ship; a human approves the release.</td></tr>
+      <tr><td><b>Pipeline</b></td><td>The whole chain of jobs: commit → lint → test → build → deploy → smoke.</td></tr>
+      <tr><td><b>Gate</b></td><td>A condition that decides whether a job runs. Ours: <code>if: on main and not a PR</code>.</td></tr>
+      <tr><td><b>Artifact</b></td><td>The built, immutable output (<code>dist/</code>) handed from build to deploy.</td></tr>
+    </table>
+    <aside class="notes">The distinction people get wrong in interviews: delivery vs deployment. Both are "CD". The difference is only whether a human presses the button — and that is a risk decision, not a technical one. Ours is continuous deployment until you add a required reviewer to the production environment.</aside>
   </section>
 
-  <!-- ============ SLIDE 4 · PIPELINE MAP (animated) ============ -->
+  <!-- ============ SLIDE 4 · HOW ACTIONS WORKS ============ -->
   <section class="slide">
-    <h1>The pipeline 🛤️</h1>
-    <div class="pipe">
-      <div class="pipe-dot" aria-hidden="true"></div>
-      <div class="pipe-box">📦 Commit</div><span class="pipe-arrow">→</span>
-      <div class="pipe-box">🔍 Lint</div><span class="pipe-arrow">→</span>
-      <div class="pipe-box">🍪 Test</div><span class="pipe-arrow">→</span>
-      <div class="pipe-box">📦 Build</div><span class="pipe-arrow">→</span>
-      <div class="pipe-box">🚚 Deploy</div>
+    <h1>How GitHub Actions actually works</h1>
+    <div class="cols">
+      <div class="card">
+        <p><b>1. Event</b> — a push, a PR, a schedule.</p>
+        <p><b>2. Workflow</b> — the YAML file in <code>.github/workflows/</code> that says what to do.</p>
+        <p><b>3. Runner</b> — a fresh, throwaway VM. One per job. Destroyed afterwards — <b>state never leaks between runs</b>.</p>
+        <p><b>4. Job → steps</b> — each step is one command or one action.</p>
+      </div>
+      <div class="card">
+<pre class="code"><span class="c"># the smallest possible workflow</span>
+<span class="k">on</span>: [push]
+<span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: ubuntu-latest
+    <span class="k">steps</span>:
+      - <span class="k">run</span>: npm run build</pre>
+        <p class="small">A workflow is just YAML the platform interprets. The runner is not your laptop — it is a clean machine, every time.</p>
+      </div>
     </div>
-    <p class="big">An assembly line for code.</p>
-    <aside class="notes">Walk left to right. Each box is one 'job' in our GitHub Actions file. Nothing skips ahead — the line moves one box at a time.</aside>
+    <aside class="notes">The "ephemeral runner" idea is the one that changes how you debug: you cannot SSH into a runner, and you cannot rely on a file you left there yesterday. Everything the job needs must be in the workflow or fetched by it. That is why the pipeline re-installs Node every single run.</aside>
   </section>
 
-  <!-- ============ SLIDE 5 · STAGE: LINT ============ -->
+  <!-- ============ SLIDE 5 · THE GRAPH ============ -->
   <section class="slide">
-    <h1>Stage 1 · Lint 🔍 — the spell check</h1>
-    <p class="mid">A robot reads your code like a teacher spell-checking an essay. Typos, missing brackets, messy lines — flagged.</p>
-    <div class="mapping">In the lab: job <b>"lint"</b> runs <code>npm run lint</code> — it parses every JS file and checks the HTML wiring. If it fails, the line stops right there.</div>
-    <aside class="notes">Lint is cheap and fast, so it runs first, in parallel with tests. Nobody ships with spelling mistakes — why ship with code mistakes?</aside>
+    <h1>The pipeline, end to end</h1>
+    <div class="pipe">
+      <span class="pipe-box">📦 Commit</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-box">🔍 Lint</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-box">🍪 Test</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-box">📦 Build</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-box">🚚 Deploy</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-box">🌐 Smoke</span>
+      <span class="pipe-dot"></span>
+    </div>
+    <p class="mid"><code>lint</code> ∥ <code>test</code> (parallel) → <code>build</code> → <code>deploy</code> → <code>smoke</code></p>
+    <div class="mapping">Parallel jobs save wall-clock time. The chain after them is a <b>dependency graph</b>: each job declares what it <code>needs</code>, and GitHub works out the order.</div>
+    <aside class="notes">Point at the graph, not the boxes: lint and test have no `needs:` so they start together; build has `needs: [lint, test]` so it waits for both. When one fails, the rest are skipped — grey, not red. Skipped is a different signal from failed: skipped means "we never got there", failed means "we tried and it broke".</aside>
   </section>
 
-  <!-- ============ SLIDE 6 · STAGE: TEST ============ -->
+  <!-- ============ SLIDE 6 · LINT ============ -->
   <section class="slide">
-    <h1>Stage 2 · Test 🍪 — the taste test</h1>
-    <p class="mid">Robot tasters follow a checklist: Does the counter start at 0? Does it count up? What if someone asks for a half-cookie (a non-integer)? It must say NO.</p>
-    <div class="mapping">In the lab: job <b>"test"</b> runs <code>npm test</code> — 5 tiny robot taste-testers.</div>
-    <aside class="notes">A test is a checklist item. Failing means the recipe is wrong — not that the robot is mean. The robot is doing its job.</aside>
+    <h1>Job 1 · Lint — rules, not opinions</h1>
+    <p class="mid">A linter is a program that reads your code and complains about things your team decided to complain about.</p>
+    <div class="cols">
+      <div class="card">
+        <p><span class="badge a">SYNTAX</span> every shipped file parses (a missing brace is a build-stopper)</p>
+        <p><span class="badge a">WIRING</span> <code>index.html</code> still has the ids <code>app.js</code> expects</p>
+      </div>
+      <div class="card">
+        <p><span class="badge g">CONSISTENCY</span> every <code>npm run X</code> in the workflow still exists in <code>package.json</code></p>
+        <p><span class="badge r">SECRETS</span> no credential-shaped string is committed</p>
+      </div>
+    </div>
+    <div class="mapping">19 checks, zero dependencies. ESLint is the same idea with 300 rules — the shape is identical: <b>a rule, a failure message, an exit code</b>.</div>
+    <aside class="notes">"Consistency" is the check people underestimate: rename an npm script locally, forget the workflow, and CI dies with a confusing "command not found" instead of a clear message. The secret scan is the other one worth automating — humans are bad at not committing .env files, machines are great at it.</aside>
   </section>
 
-  <!-- ============ SLIDE 7 · STAGE: BUILD ============ -->
+  <!-- ============ SLIDE 7 · TEST + MATRIX ============ -->
   <section class="slide">
-    <h1>Stage 3 · Build 📦 — pack the box</h1>
-    <p class="mid">Gather the page (HTML + CSS + JS) into one neat box called dist/. Stick on a label: version, date, commit.</p>
-    <div class="mapping">In the lab: job <b>"build"</b> runs <code>npm run build</code>, then hands the box to GitHub (the "artifact").</div>
-    <aside class="notes">Same ingredients → same box, every time. The box is called an artifact. Deploy never touches your source folder — only the box.</aside>
+    <h1>Job 2 · Test — and the matrix</h1>
+    <table class="tbl">
+      <tr><th>Layer</th><th>What it means</th><th>Here</th></tr>
+      <tr><td><b>Unit</b></td><td>one function, no I/O, milliseconds</td><td>8 tests on <code>createCounter</code></td></tr>
+      <tr><td><b>Integration</b></td><td>your code + another real piece (here: the linter as a subprocess)</td><td>3 tests on <code>lint.js</code></td></tr>
+      <tr><td><b>E2E</b></td><td>a real browser clicking the real page</td><td>❌ not here</td></tr>
+    </table>
+    <p class="mid"><span class="badge g">MATRIX</span> the test job runs <b>twice</b> — Node 20 and Node 22 — so one green check becomes two. <code>fail-fast: false</code> keeps both running so you see every broken runtime at once.</p>
+    <aside class="notes">A matrix is the cheapest insurance in CI: your code must pass on every runtime you claim to support. When the matrix fails, read WHICH leg failed — a matrix failure is often version-specific, not logic-specific. Also flag: a test that cannot fail is worse than no test, and a flaky test is a bug, not bad luck — a flaky red trains people to ignore red.</aside>
   </section>
 
-  <!-- ============ SLIDE 8 · STAGE: DEPLOY ============ -->
+  <!-- ============ SLIDE 8 · BUILD ============ -->
   <section class="slide">
-    <h1>Stage 4 · Deploy 🚚 — the delivery truck</h1>
-    <p class="mid">The truck carries the box to the giant library called GitHub Pages, where anyone with the link can read it.</p>
-    <div class="mapping">In the lab: job <b>"deploy"</b> — and the truck ONLY leaves for pushes to main. Homework proposals (PRs) never get a truck.</div>
-    <aside class="notes">Preview the gate concept: propose ≠ publish. Ask the kids when a truck should leave — only after the robots say yes.</aside>
+    <h1>Job 3 · Build — the artifact</h1>
+    <ul class="bullets">
+      <li><b><code>dist/</code> is the artifact</b> — the only thing the deploy job is allowed to publish. It never reads your source.</li>
+      <li><b>Immutable</b> — once built, the box cannot change under you. What you deploy is exactly what you tested.</li>
+      <li><b>Labelled</b> — <code>BUILD_INFO.json</code> carries version, build time and the <b>commit sha</b>.</li>
+      <li><b>Reproducible</b> — same input, same output. If it is not reproducible, "it worked in CI" means nothing.</li>
+    </ul>
+    <div class="mapping">The commit sha inside the artifact is how you answer "which code is live?" without guessing. <b>That is what the smoke job checks later.</b></div>
+    <aside class="notes">Artifacts are why "build once, deploy many" exists: the staging deploy and the production deploy must run the SAME bytes, otherwise what you tested is not what shipped. Also mention: in a real project you version artifacts (semver + sha) and keep old ones, because rollback needs the previous artifact, not a rebuild.</aside>
   </section>
 
-  <!-- ============ SLIDE 9 · INTERACTIVE SIMULATOR ============ -->
+  <!-- ============ SLIDE 9 · DEPLOY / OIDC / ENVIRONMENTS ============ -->
   <section class="slide">
-    <h1>You drive the pipeline! 🎮</h1>
+    <h1>Job 4 · Deploy — identity, not passwords</h1>
+    <div class="cols">
+      <div class="card">
+        <p><b>OIDC instead of a stored secret</b></p>
+        <p>The runner mints a <b>short-lived token</b> proving "I am this repo's workflow". Nothing is stored, nothing leaks, nothing to rotate.</p>
+        <p><span class="badge g">id-token: write</span> <span class="badge g">pages: write</span></p>
+      </div>
+      <div class="card">
+        <p><b>environment: production</b></p>
+        <p>Names the target. In <i>Settings → Environments</i> you can attach <b>protection rules</b>: required reviewers, wait timer, branch limits.</p>
+        <p>Add a reviewer → <b>continuous delivery</b>.</p>
+      </div>
+    </div>
+    <div class="mapping">Least privilege is a budget: the deploy job gets write access, every other job gets read-only. A compromised lint step cannot publish.</div>
+    <aside class="notes">OIDC is the single biggest change in modern CI security: before, every pipeline needed a long-lived PAT sitting in repo settings, copied between orgs, rotated by hand, and occasionally leaked in a screenshot. Now the platform vouches for the workflow itself. If you ever add a real secret, it goes in Settings → Secrets, never in the repo — and our linter fails the build if a credential-shaped string shows up in a commit.</aside>
+  </section>
+
+  <!-- ============ SLIDE 10 · THE GATE (interactive tabs) ============ -->
+  <section class="slide">
+    <h1>The gate — one line, three behaviours</h1>
+    <p class="small">Click a tab. This is the same <code>if:</code> line producing all three outcomes.</p>
+    <div class="tabs">
+      <input type="radio" name="gate" id="tab-pr" checked>
+      <input type="radio" name="gate" id="tab-push">
+      <input type="radio" name="gate" id="tab-manual">
+      <div class="tab-labels">
+        <label for="tab-pr">Pull Request</label>
+        <label for="tab-push">Push to main</label>
+        <label for="tab-manual">Manual run</label>
+      </div>
+      <div class="tab-panels">
+        <div class="panel panel-pr">
+          <p class="big">lint ✅ · test ✅ · build ✅ · deploy ⏭️ · smoke ⏭️</p>
+          <p class="mid">A PR is a <b>proposal</b>. The robots check it; nobody publishes it. Merging to <code>main</code> is what triggers the release.</p>
+        </div>
+        <div class="panel panel-push">
+          <p class="big">lint ✅ · test ✅ · build ✅ · deploy ✅ · smoke ✅</p>
+          <p class="mid">A push to <code>main</code> is a <b>release</b>: the whole chain runs, and the smoke job proves the live site answers.</p>
+        </div>
+        <div class="panel panel-manual">
+          <p class="big">same as push to main <i>if</i> you start it on <code>main</code></p>
+          <p class="mid">The gate checks <b>branch</b> and <b>event type</b> — not "was it a push". On any other branch it stops after build. Honest behaviour, and worth knowing before you demo it.</p>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">This is the single most important slide for a reviewer: the gate is one line of YAML — `if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'` — but it encodes a policy about who may publish. Ask: what would you add if a junior could push to main? (Answer: branch protection + required reviews + environment reviewers.)</aside>
+  </section>
+
+  <!-- ============ SLIDE 11 · SMOKE ============ -->
+  <section class="slide">
+    <h1>Job 5 · Smoke — green is not the same as working</h1>
+    <p class="mid">A green pipeline means <b>the steps exited 0</b>. It does not mean a user can load the page.</p>
+    <pre class="code">curl -fsSL --retry 10 --retry-all-errors --retry-delay 5 "$URL"   <span class="c"># 1. reachable (Pages propagates late)</span>
+grep -q "magic-button" /tmp/index.html                                  <span class="c"># 2. it is OUR page</span>
+test "$DEPLOYED" = "$GITHUB_SHA"                                         <span class="c"># 3. built from THIS commit</span></pre>
+    <div class="mapping">The smoke job is the only one that looks at the <b>result</b> instead of the process. It can turn the pipeline red <i>after</i> a successful deploy — which is exactly when you want to know, because the fix is still minutes away.</div>
+    <aside class="notes">This job exists because of the gap between "the deploy command succeeded" and "the site works". Real systems extend it: synthetic monitoring, error-rate alerts, and automatic rollback when the smoke test fails. Mention the retry: GitHub Pages takes seconds to propagate, so the checker needs retry logic too — eventually-consistent systems need the CHECKER to be patient, not just the deploy.</aside>
+  </section>
+
+  <!-- ============ SLIDE 12 · SIMULATOR (interactive) ============ -->
+  <section class="slide">
+    <h1>Drive the pipeline yourself 🎮</h1>
     <div class="sim">
       <div id="sim-stages" class="stages">
         <div class="stage"><span class="stage-icon">📦</span><span class="stage-name">Commit</span><span class="stage-cmd">git push</span></div>
@@ -340,81 +511,169 @@ body.show-notes .notes::before{
         <div class="stage"><span class="stage-icon">🍪</span><span class="stage-name">Test</span><span class="stage-cmd">npm test</span></div>
         <div class="stage"><span class="stage-icon">📦</span><span class="stage-name">Build</span><span class="stage-cmd">npm run build</span></div>
         <div class="stage"><span class="stage-icon">🚚</span><span class="stage-name">Deploy</span><span class="stage-cmd">GitHub Actions</span></div>
+        <div class="stage"><span class="stage-icon">🌐</span><span class="stage-name">Smoke</span><span class="stage-cmd">curl live URL</span></div>
       </div>
       <div class="sim-mid">
         <div class="sim-left">
           <div class="sim-controls">
-            <button id="btn-commit" class="btn" type="button">✏️ Commit code!</button>
-            <label id="chk-sugar-label"><input type="checkbox" id="chk-sugar"> 💥 Oops! Forgot the sugar!</label>
-            <button id="btn-fix" class="btn" type="button" hidden>🔧 Fix the code &amp; retry</button>
+            <button id="btn-commit" class="btn" type="button">▶ Run the pipeline</button>
+            <label id="chk-sugar-label"><input type="checkbox" id="chk-sugar"> 🐛 Inject a regression (off-by-one)</label>
+            <button id="btn-fix" class="btn" type="button" hidden>🔧 Revert the fix &amp; re-run</button>
           </div>
           <p id="sim-msg" class="sim-msg" aria-live="polite"></p>
-          <pre id="sim-log" aria-live="polite">Terminal ready. Press ✏️ Commit code!</pre>
+          <pre id="sim-log" aria-live="polite">Pipeline idle. Press ▶ Run the pipeline.</pre>
         </div>
         <div id="confetti-zone" class="confetti-zone">
           <div class="road"><div id="truck">🚚</div></div>
         </div>
       </div>
     </div>
-    <aside class="notes">Presenter script: (1) click Commit — watch all five stages go green, truck drives, confetti. (2) tick the sugar checkbox, Commit again — watch it stop red at Test. (3) press Fix &amp; retry — full green run, truck, confetti. Ask the kids to predict each stage before it runs.</aside>
+    <aside class="notes">Presenter script: (1) Run the pipeline — all six stages go green, the truck drives, confetti. (2) Tick the regression box and run again — it halts red at Test, and Build/Deploy/Smoke never run. (3) Revert the fix and re-run — green again. The point to land: a red pipeline is a CONTAINED failure. The bad commit reached a test, not production.</aside>
   </section>
 
-  <!-- ============ SLIDE 10 · WHEN IT BREAKS ============ -->
+  <!-- ============ SLIDE 13 · TEAM FLOW ============ -->
   <section class="slide">
-    <h1>When it breaks 🔴 — the GOOD news</h1>
-    <p class="mid">You forgot the sugar. The taste test fails ❌. The pipeline STOPS. The truck never leaves. You fix the recipe, the robots check again, everything goes green.</p>
-    <p class="big red-good">Red is good: the robots caught it BEFORE your friends saw it.</p>
-    <aside class="notes">This is the emotional core of the whole talk. Failure here is protection, not shame. Draw the loop: break → red → fix → rerun → green.</aside>
+    <h1>How this fits into a team's day</h1>
+    <div class="cols">
+      <div class="card">
+        <p><b>Author</b> — branch, push, open PR, fix red CI.</p>
+        <p><b>Reviewer</b> — reads the diff. A human gate; CI is a machine gate. Neither replaces the other.</p>
+      </div>
+      <div class="card">
+        <p><b>Release owner / on-call</b> — owns what happens when a deploy breaks.</p>
+        <p><b>Platform team</b> — owns the pipeline YAML. If every repo has the same 200 lines, they extract a reusable action or a template repo.</p>
+      </div>
+    </div>
+    <p class="mid">branch → push → <b>PR</b> → review → <b>required status checks green</b> → merge to main → release</p>
+    <aside class="notes">The pipeline is not just YAML, it is a team agreement encoded in YAML. New developers usually get burned by the "who merges what" question, not by the YAML. Say the roles out loud and name who owns the pipeline file — in a small team that is you, and knowing that is part of the job.</aside>
   </section>
 
-  <!-- ============ SLIDE 11 · YOU TRY IT (real commands) ============ -->
+  <!-- ============ SLIDE 14 · PROTECT MAIN ============ -->
   <section class="slide">
-    <h1>Your turn 💻 — real commands</h1>
+    <h1>Protect <code>main</code> — where the gate becomes real</h1>
+    <ul class="bullets">
+      <li><i>Settings → Branches → Add rule</i> → branch name <code>main</code></li>
+      <li>☑ <b>Require status checks to pass</b> — tick <code>lint</code>, <code>test</code>, <code>build</code></li>
+      <li>☑ <b>Require pull requests</b> — no direct pushes</li>
+      <li>☑ <b>Require branches to be up to date</b> — no stale merges</li>
+    </ul>
+    <div class="mapping">YAML can be bypassed by anyone with write access. <b>Repo settings cannot be bypassed by accident</b> — which is why the gate needs both halves.</div>
+    <aside class="notes">Do this on your fork as exercise: try to merge a red PR and GitHub refuses with a link to the failing check. That refusal is the same mechanism that stops a hotfix at 2am from shipping untested code — and it is also the mechanism that can block you, so teams agree an emergency path (break glass, revert, fix forward) in advance.</aside>
+  </section>
+
+  <!-- ============ SLIDE 15 · FAILURE MODES ============ -->
+  <section class="slide">
+    <h1>What actually breaks in real pipelines</h1>
+    <table class="tbl">
+      <tr><th>Failure</th><th>What it looks like</th><th>What we do about it</th></tr>
+      <tr><td><b>Flaky test</b></td><td>red 1 run in 20</td><td>fix or delete it — never retry blindly</td></tr>
+      <tr><td><b>Propagation delay</b></td><td>deploy green, site still old</td><td>retry in the checker (our smoke job)</td></tr>
+      <tr><td><b>Secret expiry</b></td><td>deploy fails at auth</td><td>prefer OIDC; rotate what remains</td></tr>
+      <tr><td><b>Runner OOM</b></td><td>job killed, no log tail</td><td>bigger runners, smaller matrix</td></tr>
+      <tr><td><b>Cache poisoning</b></td><td>weird artifacts from a branch</td><td>scope caches; never cache secrets</td></tr>
+      <tr><td><b>Force-push to main</b></td><td>lost history, broken PRs</td><td>protect branches; use <code>git revert</code></td></tr>
+    </table>
+    <aside class="notes">This is the slide that separates "I followed a tutorial" from "I have seen an incident". Every one of these is a real class of failure. The pattern to teach: prefer tools that fail loudly and early (lint, tests, smoke) over tools that fail silently and late (a user reports the bug).</aside>
+  </section>
+
+  <!-- ============ SLIDE 16 · SECURITY ============ -->
+  <section class="slide">
+    <h1>Security practices that actually matter</h1>
+    <ul class="bullets">
+      <li><b>Least privilege per job</b> — only <code>deploy</code> can write; everything else is read-only.</li>
+      <li><b>No long-lived secrets</b> — OIDC for Pages; real secrets in <i>Settings → Secrets</i>, never in the repo.</li>
+      <li><b>Treat fork PRs as hostile</b> — a PR from a fork runs <i>their</i> code. Never run untrusted code with a write-scoped token (<code>pull_request_target</code> is the classic trap).</li>
+      <li><b>Pin your actions</b> — <code>@v4</code> is readable; a full commit SHA is safe. Know the trade-off.</li>
+      <li><b>Assume every commit is public</b> — deleting a file does not delete it from history; rotate it.</li>
+    </ul>
+    <aside class="notes">The pull_request_target trap is worth 60 seconds: that trigger runs your workflow with your token and secrets against the PR's code — which is how people accidentally expose production keys. The rule of thumb: untrusted code + write-scoped token = never. Our linter's secret scan is the small, automatable version of the habit.</aside>
+  </section>
+
+  <!-- ============ SLIDE 17 · COST ============ -->
+  <section class="slide">
+    <h1>Cost, quotas and caching</h1>
+    <div class="cols">
+      <div class="card">
+        <p><b>Public repos</b> → free hosted runners.</p>
+        <p><b>Private repos</b> → a monthly minutes allowance (~2,000 on GitHub's Free plan — check current pricing; the number changes).</p>
+        <p><b>Minutes = wall-clock time.</b> A job that hangs for 10 minutes costs 10 minutes.</p>
+        <p>→ that is why every job sets <code>timeout-minutes: 10</code>.</p>
+      </div>
+      <div class="card">
+        <p><b>Caching</b> reuses downloaded dependencies between runs.</p>
+        <p>This lab has <b>zero dependencies</b> — so there is nothing to cache, and every runner starts instantly.</p>
+        <p>Caches are shared across branches: a poisoned cache is a real supply-chain risk.</p>
+        <p><b>Self-hosted runners</b>: no minute limits, but now you own patching, isolation and cleanup.</p>
+      </div>
+    </div>
+    <aside class="notes">Cost conversations come up in every org review. The three levers: fewer minutes (cache, smaller matrix, faster jobs), cheaper minutes (bigger runners are 2-8x the price but can be faster per job), or your own hardware (self-hosted). Our matrix doubles the test job's minutes — worth it here, not always worth it for a 90-minute suite.</aside>
+  </section>
+
+  <!-- ============ SLIDE 18 · METRICS ============ -->
+  <section class="slide">
+    <h1>What you would measure (DORA)</h1>
+    <table class="tbl">
+      <tr><th>Metric</th><th>Question</th><th>Bad looks like</th></tr>
+      <tr><td><b>Deployment frequency</b></td><td>how often do we ship?</td><td>one big release a month</td></tr>
+      <tr><td><b>Lead time for changes</b></td><td>commit → live, how long?</td><td>days of queueing</td></tr>
+      <tr><td><b>Change failure rate</b></td><td>what % of deploys cause an incident?</td><td>every release needs a hotfix</td></tr>
+      <tr><td><b>Time to restore</b></td><td>when it breaks, how fast is it fixed?</td><td>rollback takes hours</td></tr>
+    </table>
+    <div class="mapping">CI/CD is not "we have a pipeline". It is <b>smaller batches, more often, safer each time</b>. A pipeline that takes 40 minutes trains people to batch huge changes — the opposite of the goal.</div>
+    <aside class="notes">If you are asked "how do you know your CI/CD is working?" — these four numbers, and their trend. The counter-intuitive lesson: making the pipeline faster reduces lead time, but the bigger win is making it reliable, because a pipeline people distrust gets ignored. Teams game all four metrics; the honest answer is to look at them together.</aside>
+  </section>
+
+  <!-- ============ SLIDE 19 · YOUR TURN ============ -->
+  <section class="slide">
+    <h1>Your turn 💻 — the commands</h1>
     <ul class="cmd-list">
-      <li><code>git add . &amp;&amp; git commit -m "my change" &amp;&amp; git push</code> <button class="copy-btn" type="button">📋 Copy</button></li>
+      <li><code>git checkout -b feature/my-change</code> <button class="copy-btn" type="button">📋 Copy</button></li>
+      <li><code>git add .</code> <button class="copy-btn" type="button">📋 Copy</button></li>
+      <li><code>git commit -m "my change"</code> <button class="copy-btn" type="button">📋 Copy</button></li>
+      <li><code>git push -u origin feature/my-change</code> <button class="copy-btn" type="button">📋 Copy</button></li>
       <li><code>npm run lint</code> <button class="copy-btn" type="button">📋 Copy</button></li>
       <li><code>npm test</code> <button class="copy-btn" type="button">📋 Copy</button></li>
       <li><code>npm run build</code> <button class="copy-btn" type="button">📋 Copy</button></li>
-      <li>On GitHub: open the Actions tab and watch the robots 🤖</li>
+      <li>Then open a PR — watch lint/test/build run and deploy stay grey.</li>
     </ul>
-    <aside class="notes">Point to README 'Local Mode' — everything on this slide runs free on their own computer, no account needed for the first three. (The last line is prose, not a command — so it gets no Copy button.)</aside>
+    <aside class="notes">These all run free on their own machine (README "Local Mode"). The last line is prose, so it gets no Copy button. Tell them to actually do the PR exercise — the moment they see deploy stay grey on their own PR is the moment the gate stops being a slide and becomes a fact.</aside>
   </section>
 
-  <!-- ============ SLIDE 12 · PROOF (this lab's real pipeline) ============ -->
+  <!-- ============ SLIDE 20 · PROOF ============ -->
   <section class="slide">
-    <h1>Proof: the robots really ran 🏁</h1>
-    <p class="mid">Not a cartoon this time — this is the lab you just built, doing it for real.</p>
-    <ul class="cmd-list">
-      <li>📦 The code: <b>github.com/fontvu/cicd-lab</b></li>
-      <li>🤖 The robots: <b>github.com/fontvu/cicd-lab/actions</b> — 4 jobs, all green ✅</li>
-      <li>⏭️ The gate: a run from any branch <b>other than main</b> — Lint ✅ Test ✅ Build ✅ and Deploy <b>skipped</b> (grey). That grey box IS the gate.</li>
-      <li>🚚 Delivered: <b>fontvu.github.io/cicd-lab</b> — and <b>/BUILD_INFO.json</b> shows the commit the robots actually built</li>
+    <h1>Proof: this pipeline really ran 🏁</h1>
+    <ul class="bullets">
+      <li>📦 <b>github.com/fontvu/cicd-lab</b> — the code you can clone</li>
+      <li>🤖 <b>/actions</b> — every run, every job, every log</li>
+      <li>🧪 <b>the matrix</b> — <code>test (node 20)</code> and <code>test (node 22)</code>, both green</li>
+      <li>⏭️ <b>the gate</b> — a non-<code>main</code> run: lint/test/build green, deploy + smoke <b>skipped</b></li>
+      <li>🌐 <b>the smoke job</b> — fetches the live site and compares its commit sha with the run</li>
+      <li>🚚 <b>the live site</b> — <b>fontvu.github.io/cicd-lab</b>, and <b>/BUILD_INFO.json</b> shows which commit built it</li>
     </ul>
-    <aside class="notes">Presenter script: click Actions in the repo, open the newest green run — four jobs, four checkmarks, top to bottom. Then open any non-main run: three green and one grey "skipped". Ask the kids: "did the truck leave?" No — because it was not main. Same code, same robots, different door. The BUILD_INFO.json trick is worth pointing out: the live site can tell you which commit it came from, so "it works on my machine" becomes checkable.</aside>
+    <aside class="notes">Presenter script: open Actions, open the newest green run — six checks (lint, two test legs, build, deploy, smoke). Then open a run from a non-main branch: three green and two grey "skipped". Ask: "did the truck leave?" No — because it was not main. Same code, same robots, different door. The BUILD_INFO trick is worth pointing out: the live site can tell you which commit it came from, so "it works on my machine" becomes checkable.</aside>
   </section>
 
-  <!-- ============ SLIDE 13 · QUIZ ============ -->
+  <!-- ============ SLIDE 21 · QUIZ ============ -->
   <section class="slide">
     <h1>Quiz time 🧠 — tap an answer</h1>
     <div id="quiz"></div>
-    <aside class="notes">Ask the kids to shout an answer BEFORE tapping. Wrong answers are funny, not shameful — that's the point of a quiz. Right answers lock the question green; wrong ones shake and let you try again.</aside>
+    <aside class="notes">Answer out loud before tapping. Wrong answers shake instead of shaming — the quiz is teaching, not testing. If a question gets a wrong answer from the room, that is the best possible outcome: it means the concept was genuinely unclear and you can fix it right there.</aside>
   </section>
 
-  <!-- ============ SLIDE 14 · RECAP ============ -->
+  <!-- ============ SLIDE 22 · RECAP ============ -->
   <section class="slide">
     <h1>Recap 🎓</h1>
     <ul class="bullets">
-      <li>Recipe = code 📝</li>
-      <li>Robot inspectors = CI 🔍🍪</li>
-      <li>Packing the box = Build 📦</li>
-      <li>Delivery truck = CD 🚚</li>
+      <li>📝 <b>Code</b> → 🔍 <b>CI</b> (lint + test, on every runtime) → 📦 <b>artifact</b> → 🚚 <b>CD</b> (deploy) → 🌐 <b>verify</b></li>
+      <li>🔒 <b>Least privilege + OIDC</b> instead of stored secrets</li>
+      <li>🚦 <b>The gate</b> = branch + event type (+ repo protection rules)</li>
+      <li>🧪 <b>Smoke test</b> = green steps are not a working site</li>
+      <li>⏪ <b>Rollback</b> = <code>git revert</code> + push. Normal operation, not a crisis.</li>
     </ul>
-    <p class="big">Now go break the lab on purpose! 🔴→🟢</p>
-    <p class="small">Homework: README exercise (a). Red X = trophy.</p>
-    <aside class="notes">Homework is to break the lab on purpose and watch the robots save the day — README exercise (a). You just learned CI/CD. 🎉</aside>
+    <div class="mapping">Homework: break the lab on purpose. Break a test, break the HTML wiring, commit a fake secret — and watch which job catches it. <b>A red X you caused is a lesson; a red X you cannot explain is a pager.</b></div>
+    <aside class="notes">Close by naming the next steps for a real project: a staging environment, dependency caching, an E2E test with Playwright, and a release workflow that tags a version. Each of those is one small addition to what exists here — which is the whole point: CI/CD is not a product you buy, it is a habit you build one gate at a time.</aside>
   </section>
-
-</main>
+  </main>
 
 <!-- ============ fixed bottom control bar ============ -->
 <div id="controls">
@@ -467,7 +726,28 @@ function goTo(n) {
   dots.forEach((d, i) => d.classList.toggle('active', i === current));
   counterEl.textContent = 'Slide ' + (current + 1) + ' / ' + slides.length;
   topbar.style.width = ((current + 1) / slides.length * 100) + '%';
+  // Keep the URL in step with the slide, so you can deep-link to one slide
+  // (…/presentation.html#12) or reload without losing your place.
+  // replaceState does NOT add a history entry, so the browser Back button
+  // does not walk back through every slide you advanced past.
+  const wanted = '#' + (current + 1);
+  if (location.hash !== wanted) {
+    try {
+      history.replaceState(null, '', wanted);
+    } catch {
+      // file:// pages refuse replaceState in some browsers — fall back.
+      location.hash = wanted;
+    }
+  }
 }
+// Deep link: #7 opens slide 7. Also fires when someone edits the hash.
+function slideFromHash() {
+  const n = parseInt(String(location.hash).replace('#', ''), 10);
+  if (!Number.isFinite(n)) return;
+  const idx = Math.max(0, Math.min(slides.length - 1, n - 1));
+  if (idx !== current) goTo(idx); // guard: never loop back into goTo
+}
+window.addEventListener('hashchange', slideFromHash);
 const nextSlide = () => goTo(current + 1);
 const prevSlide = () => goTo(current - 1);
 
@@ -529,15 +809,17 @@ notesBtn.addEventListener('click', toggleNotes);
 // fake terminal prints when that stage succeeds.
 const STAGES = [
   { name: 'Commit', icon: '📦', cmd: 'git push',
-    log: '☁️ Committed! Your code flew to the robot cloud.' },
+    log: '📦 Committed — the change is on the remote.' },
   { name: 'Lint', icon: '🔍', cmd: 'npm run lint',
-    log: '🔍 Spell check passed — every word is right.' },
+    log: '🔍 Lint passed — 19 checks, no violations.' },
   { name: 'Test', icon: '🍪', cmd: 'npm test',
-    log: '🍪 Taste test passed — sweet!' },
+    log: '🍪 Tests passed — 11/11 green.' },
   { name: 'Build', icon: '📦', cmd: 'npm run build',
-    log: '📦 Box packed: dist/ ready, label attached.' },
+    log: '📦 Artifact built — dist/ + BUILD_INFO.json.' },
   { name: 'Deploy', icon: '🚚', cmd: 'GitHub Actions',
-    log: '🚚 Truck rolling… 🏠 Delivered! Friends can see it! 🎉' },
+    log: '🚚 Deployed to GitHub Pages — the artifact is live.' },
+  { name: 'Smoke', icon: '🌐', cmd: 'curl live URL',
+    log: '🌐 Smoke passed — the live site answers and matches this commit.' },
 ];
 
 const simStages = $('#sim-stages');  // the five pill elements
@@ -585,7 +867,7 @@ function resetUI() {
   state = 'idle';
   currentStage = 0;
   for (let i = 0; i < STAGES.length; i++) paintStage(i, 'default');
-  simLog.textContent = 'Terminal ready. Press ✏️ Commit code!';
+  simLog.textContent = 'Pipeline idle. Press ▶ Run the pipeline.';
   simMsg.textContent = '';
   btnFix.hidden = true;
   // Park the truck instantly (no funny backwards drive): pause the
@@ -614,13 +896,13 @@ async function runStage(i) {
   logLine('⏳ ' + stage.name + ' — running "' + stage.cmd + '" …');
   await sleep(800); // the robots need a moment to look busy :)
 
-  // --- FAILURE BRANCH: the sugar bug only bites at Test (stage 2) ---
+  // --- FAILURE BRANCH: the injected regression only bites at Test (stage 2)
   if (i === 2 && chkSugar.checked) {
     paintStage(i, 'failed');
-    logLine('🤢 YUCK! This cookie has NO SUGAR! Taste test FAILED ❌');
-    logLine('🛑 Pipeline STOPPED — the truck never leaves. Fix the recipe and retry.');
-    logLine('💛 The robots caught it BEFORE your friends saw it!');
-    simMsg.textContent = '💛 No worries — the robots caught it BEFORE your friends saw it. Fix the recipe and retry!';
+    logLine('❌ Test failed — counter increments by 2, expected 1');
+    logLine('🛑 Pipeline STOPPED at Test. Build, deploy and smoke never ran.');
+    logLine('🛡️ The regression was contained BEFORE it could reach production.');
+    simMsg.textContent = '🛡️ Contained before production. Revert the fix and re-run.';
     btnFix.hidden = false;
     state = 'failed';
     return; // pipeline halts — build & deploy never run. Red is good!
@@ -652,9 +934,9 @@ btnCommit.addEventListener('click', () => {
 
 // 🔧 Fix the code & retry — put the sugar back, rerun everything green.
 btnFix.addEventListener('click', () => {
-  chkSugar.checked = false; // the recipe is fixed — sugar is back!
+  chkSugar.checked = false; // the fix is reverted — no regression injected
   resetUI();
-  logLine('🔧 Fixed the recipe — added the sugar 🍬. Rerunning the robots…');
+  logLine('🔧 Fix reverted — the regression is gone. Re-running the pipeline…');
   state = 'running';
   runStage(0); // runs fully green: the sugar checkbox is unchecked now
 });
@@ -683,14 +965,23 @@ function confetti() {
    6) QUIZ — 3 questions, instant feedback, retry allowed
    ============================================================ */
 const QUIZ = [
-  { q: 'What does CI stand for?',
-    options: ['Continuous Ice-cream', 'Continuous Integration', 'Crazy Robots'],
+  { q: 'CI stands for…',
+    options: ['Continuous Ice-cream', 'Continuous Integration', 'Continuous Inspection of the pipeline'],
     answer: 1 },
-  { q: 'A taste test fails. What happens?',
-    options: ['Broken code goes live anyway', 'The pipeline stops — robots protect the friends', 'The computer cries'],
+  { q: 'Your PR is green. What happens next?',
+    options: ['It deploys automatically', 'Deploy runs only after the PR is merged to main', 'The pipeline stops and waits'],
     answer: 1 },
-  { q: 'What does the delivery truck (CD) do?',
-    options: ['Cooks dinner', 'Carries the finished box to friends', 'Closes the door'],
+  { q: 'Why does the test job run twice in this pipeline?',
+    options: ['Because tests are flaky', 'To test on Node 20 and Node 22 (a matrix)', 'Because Pages needs two builds'],
+    answer: 1 },
+  { q: 'What is an "artifact" here?',
+    options: ['The built dist/ handed from build to deploy', 'The commit SHA', 'A Docker image'],
+    answer: 0 },
+  { q: 'The pipeline is green but the live site 404s. Which job should catch it?',
+    options: ['lint', 'build', 'smoke'],
+    answer: 2 },
+  { q: 'Why does the deploy use OIDC instead of a stored secret?',
+    options: ['OIDC is faster', 'There is no long-lived secret to leak or rotate', 'It encrypts the site'],
     answer: 1 },
 ];
 
@@ -790,9 +1081,10 @@ document.querySelectorAll('.copy-btn').forEach((btn) => {
 /* ============================================================
    8) START THE SHOW
    ============================================================ */
-renderQuiz();  // build the three quiz questions from the data above
+renderQuiz();  // build the quiz questions from the data above
 resetUI();     // grey pills + fresh terminal welcome line
-goTo(0);       // activate slide 1, dots, counter, and top progress bar
+slideFromHash(); // honour a deep link like #12, else start at slide 1
+goTo(current);   // activate slide 1, dots, counter, and top progress bar
 </script>
 </body>
 </html>

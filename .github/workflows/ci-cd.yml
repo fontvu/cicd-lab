@@ -4,11 +4,27 @@
 # WHAT THIS FILE IS: a recipe GitHub follows automatically. Every time someone
 # pushes code or opens a Pull Request, GitHub spins up a fresh computer (a
 # "runner"), reads this file top to bottom, and does what it says. If any step
-# fails, the pipeline STOPS and shows a red X — that is the entire point of
-# CI: robots catch mistakes BEFORE friends ever see them.
+# fails, the pipeline STOPS and shows a red X.
 #
 # READ IT TOP TO BOTTOM. Every block has a plain-English comment.
-# The companion doc docs/WORKFLOW-EXPLAINED.md dissects each line.
+# The companion doc docs/WORKFLOW-EXPLAINED.md dissects each line, and the
+# slide deck (presentation.html) teaches the same pipeline slide by slide.
+#
+# THE GRAPH THIS FILE DESCRIBES:
+#
+#      ┌─────────┐   ┌─────────┐
+#      │  lint   │   │  test   │   (lint + test run in PARALLEL;
+#      └────┬────┘   └────┬────┘    test runs twice: Node 20 + Node 22)
+#           └──────┬──────┘
+#           ┌──────▼──────┐
+#           │    build    │   (waits for BOTH)
+#           └──────┬──────┘
+#           ┌──────▼──────┐
+#           │   deploy    │   (only on main, never on a PR)
+#           └──────┬──────┘
+#           ┌──────▼──────┐
+#           │    smoke    │   (prove the LIVE site actually works)
+#           └─────────────┘
 # ============================================================================
 
 # The name shown in the GitHub "Actions" tab.
@@ -41,6 +57,12 @@ on:
 #                    proves "I am really this repo" WITHOUT any long-lived
 #                    secret stored in the repository. No secrets = nothing
 #                    to leak. (OIDC = OpenID Connect, a trust handshake.)
+#
+# NOTE: this is the WORKFLOW-WIDE default. Individual jobs below override it
+# with their own `permissions:` block, so a job that only reads code cannot
+# write to Pages even if a future edit forgets to be careful. This is the
+# "defence in depth" idea: never rely on one line to keep the blast radius
+# small — make the narrow job narrow too.
 # ----------------------------------------------------------------------------
 permissions:
   contents: read
@@ -51,19 +73,40 @@ permissions:
 # CONCURRENCY — only one pipeline may touch Pages at a time.
 # If you push twice quickly, the older run is CANCELLED so two runs never
 # race to publish different versions of the same site.
+# group: pages             → the name of the lock; anything with the same
+#                            name shares the lock
+# cancel-in-progress: true → a NEWER run cancels the OLDER one. Right for
+#                            "I want the latest code live"; wrong for long
+#                            production releases where you would not want a
+#                            half-finished run killed mid-flight.
 # ----------------------------------------------------------------------------
 concurrency:
   group: pages
   cancel-in-progress: true
 
+# ----------------------------------------------------------------------------
+# DEFAULT TIMEOUT — a safety net for every job in this workflow.
+# If a job hangs (a network call that never returns, an infinite loop), GitHub
+# would otherwise keep the runner busy and burn your monthly minutes. 10
+# minutes is far more than any job here needs; the whole pipeline runs in
+# well under two.
+# ----------------------------------------------------------------------------
+defaults:
+  run:
+    timeout-minutes: 10
+
 jobs:
   # ==========================================================================
-  # JOB 1 of 4: lint — "spell check for code"
+  # JOB 1 of 5: lint — "spell check for code"
   # Runs FIRST, in PARALLEL with test. It is cheap and fast on purpose:
   # catch sloppy mistakes before spending runner time on anything heavier.
   # ==========================================================================
   lint:
     runs-on: ubuntu-latest   # a fresh GitHub-hosted Linux VM for every run
+    # Job-level permissions: this job only needs to READ the code. If it ran
+    # the deploy steps by accident, it still could not write to Pages.
+    permissions:
+      contents: read
     steps:
       - name: Get a copy of the code
         uses: actions/checkout@v4   # official GitHub action: clones your repo
@@ -75,19 +118,35 @@ jobs:
         run: npm run lint           # our own zero-dependency checker
 
   # ==========================================================================
-  # JOB 2 of 4: test — "taste test"
+  # JOB 2 of 5: test — "taste test"
   # Independent of lint (they run in parallel). If it fails, NOTHING
   # downstream runs. That is the safety net the whole lab demonstrates.
+  #
+  # MATRIX — run the same job several ways at once.
+  # `matrix` says: "run this job once per value in this list". Here the job
+  # runs TWICE — once on Node 20 and once on Node 22 — and GitHub shows both
+  # as separate checks. This is the cheapest insurance in CI: the same code
+  # must pass on every runtime you claim to support. (Our package.json says
+  # engines.node >= 20, so both of these must stay green.)
+  # fail-fast: false → do NOT cancel the other matrix leg when one fails.
+  # You want to know about EVERY broken version in one run, not fix them one
+  # at a time.
   # ==========================================================================
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
     steps:
       - name: Get a copy of the code
         uses: actions/checkout@v4
-      - name: Install Node.js 22
+      - name: Install Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: "22"        # pinned LTS = reproducible builds
+          node-version: "${{ matrix.node-version }}"   # the matrix value
       - name: Run the test suite
         run: npm test               # bare "node --test": built into Node,
                                     # finds test/*.test.js by itself — never
@@ -95,13 +154,15 @@ jobs:
                                     # on Windows/macOS with Node >= 22)
 
   # ==========================================================================
-  # JOB 3 of 4: build — "pack the box"
+  # JOB 3 of 5: build — "pack the box"
   # needs: [lint, test] means this job WAITS until both pass. If either
   # failed, this job is SKIPPED — broken code never even gets packed.
   # ==========================================================================
   build:
     needs: [lint, test]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Get a copy of the code
         uses: actions/checkout@v4
@@ -117,27 +178,38 @@ jobs:
           path: dist                              # job via GitHub's storage
 
   # ==========================================================================
-  # JOB 4 of 4: deploy — "the delivery truck"
+  # JOB 4 of 5: deploy — "the delivery truck"
   # THE GATE: this job runs ONLY when BOTH are true:
   #   1. the branch is main (github.ref == 'refs/heads/main'), AND
   #   2. the event is NOT a pull request.
   # So: push to main deploys ✅ · manual "Run workflow" on main deploys ✅ ·
   # PRs NEVER deploy ⏭️ · pushes or manual runs on other branches skip ⏭️.
   # The `if:` line below is the gate — the single most important line here.
+  #
+  # ENVIRONMENT — "where does this deploy land?"
+  # Naming an environment (production) gives the deploy a home in
+  # Settings → Environments, where you can later add PROTECTION RULES:
+  # required reviewers, a wait timer, or branch restrictions. Turn on
+  # "Required reviewers" for `production` and this pipeline becomes
+  # CONTINUOUS DELIVERY (a human approves the release) instead of
+  # CONTINUOUS DEPLOYMENT (code goes out unattended). With no rules set,
+  # the deploy runs straight through — which is what this lab does today.
   # ==========================================================================
   deploy:
     needs: build                    # only after a successful build
     # THE GATE (read it aloud): "on main, and not a pull request".
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    # OPTIONAL EXERCISE (README exercise e): uncomment the next line to
-    # require a human "Approve" click before the truck leaves. That is an
-    # "environment approval gate" — CD with a human on the button.
-    # ⚠️ environment: is a JOB-level key — it must live HERE, at the same
-    # indentation as needs:/if:/runs-on:. Putting it inside a step (deeper
-    # indent, under a "- name:" line) makes INVALID YAML and GitHub will
-    # reject the whole workflow file.
-    # environment: github-pages
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: production
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Expose the live URL to the NEXT job (smoke) as needs.deploy.outputs.
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Tell GitHub we are deploying to Pages
         uses: actions/configure-pages@v5
@@ -145,3 +217,56 @@ jobs:
         uses: actions/deploy-pages@v4
         id: deployment              # exposes the deployment URL as an
                                     # output (steps.deployment.outputs.page_url)
+
+  # ==========================================================================
+  # JOB 5 of 5: smoke — "did it actually work?"
+  # A green pipeline means "the steps ran without error". It does NOT mean
+  # "the site works for users". Those are different claims, and the gap
+  # between them is where real incidents live: a deploy can succeed and
+  # serve a 404, an empty page, or last week's build.
+  #
+  # This job closes the loop: it fetches the LIVE url and proves three
+  # things — the page is reachable, it contains our app, and it was built
+  # from THIS commit (not a stale artifact). If any check fails, the
+  # pipeline goes red AFTER the deploy — which is exactly when you want to
+  # know, because the fix (redeploy) is still minutes away.
+  # ==========================================================================
+  smoke:
+    needs: deploy                    # only after a successful deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Fetch the deployed page
+        env:
+          # Put the URL in an ENVIRONMENT VARIABLE instead of pasting
+          # ${{ ... }} straight into the shell script. That is the safe
+          # pattern: if a value ever contained shell syntax, it would be
+          # data, not code. (Here the value comes from our own deploy job,
+          # so it is trusted — but the habit is what keeps you safe later.)
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          URL="${PAGE_URL%/}"     # strip the trailing slash for clean URLs
+          echo "Smoke-testing $URL"
+          # --retry-all-errors: GitHub Pages can take a few seconds to
+          # propagate a new deployment, so retry instead of failing on the
+          # first 404. A real-world pattern: "eventually consistent" systems
+          # need retry logic in the CHECKER, not just in the deploy.
+          curl -fsSL --retry 10 --retry-all-errors --retry-delay 5 \
+               "$URL" -o /tmp/index.html
+      - name: Check the page really contains the app
+        run: |
+          grep -q "magic-button" /tmp/index.html \
+            && echo "✔ the live page contains the Magic Button" \
+            || { echo "✖ the live page does NOT contain the app"; exit 1; }
+      - name: Check the deployed build matches THIS commit
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          URL="${PAGE_URL%/}"
+          DEPLOYED=$(curl -fsSL "$URL/BUILD_INFO.json" | grep '"commit"' | cut -d'"' -f4)
+          echo "deployed commit: $DEPLOYED"
+          echo "expected commit: $GITHUB_SHA"
+          test "$DEPLOYED" = "$GITHUB_SHA" \
+            && echo "✔ the live site was built from this commit" \
+            || { echo "✖ the live site is STALE — not built from this commit"; exit 1; }
