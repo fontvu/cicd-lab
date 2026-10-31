@@ -13,7 +13,7 @@ name: CI/CD              # label shown in the Actions tab
 on: ...                  # triggers: push to main, PRs, manual button
 permissions: ...         # workflow-wide default: least privilege
 concurrency: ...         # only one pipeline touches Pages at a time
-defaults: ...            # timeout for every job (a hung job burns minutes)
+# each job: timeout-minutes: 10   # a hung job must not burn runner minutes
 jobs:
   lint: ...              # spell check — fast, parallel with test
   test: ...              # taste test — parallel with lint, on Node 20 AND 22
@@ -99,17 +99,19 @@ concurrency:
 - **The trade-off:** for a long production release you would flip this to `false` (queue instead of cancel) so a half-finished run is not killed mid-flight.
 - **What if removed:** double-push fast and two trucks race to the same doorstep.
 
-### 7. `defaults:`
+### 7. `timeout-minutes` — the job-level safety net
 
 ```yaml
-defaults:
-  run:
-    timeout-minutes: 10
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10        # a hung step must not burn runner minutes
 ```
 
-- **What it does:** every `run:` step in the workflow is killed after 10 minutes.
+- **What it does:** the job is killed after 10 minutes.
 - **Why it's here:** a hung step (a network call that never returns, an infinite loop) would otherwise keep a runner busy and burn your monthly minutes for nothing.
 - **What if removed:** the pipeline can hang until GitHub's own hard limit (6 hours). Your quota bleeds, and nobody notices for hours.
+- ⚠️ **THE TRAP THAT COST US A RUN** — `timeout-minutes` is a **job-level** key. Putting it under a workflow-level `defaults.run:` block looks reasonable and is **rejected by GitHub**, which then reports the run as a bare *"workflow file issue"* with **no jobs and no logs**. The YAML is valid; the *schema* is not. Our linter now checks the allowed keys at each level (and a regression test reproduces the mistake) so this can never waste a run again. The same class of trap: putting a job-level key inside `steps:`.
+- **Where the allowed keys live:** the *Workflow syntax* page in the GitHub docs lists them per key — and the JSON Schema at `json.schemastore.org/github-workflow.json` is machine-readable. Serious pipelines validate against that schema in a pre-commit hook.
 
 ### 8. `jobs.lint` — the spell check
 

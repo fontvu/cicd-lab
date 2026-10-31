@@ -1,7 +1,7 @@
 {
   "name": "cicd-lab",
   "version": "1.0.0",
-  "description": "A tiny zero-dependency static site (the Magic Button) with a real beginner-friendly CI/CD pipeline on GitHub Actions.",
+  "description": "A tiny zero-dependency static site (the Magic Button) with a real CI/CD pipeline on GitHub Actions: lint -> test matrix -> build -> deploy -> post-deploy smoke test.",
   "type": "module",
   "scripts": {
     "lint": "node --experimental-vm-modules scripts/lint.js",

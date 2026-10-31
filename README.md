@@ -48,7 +48,7 @@ nod. Both are normal; the choice is a risk decision, not a technical one.
 
 ## 🎤 The talk (presentation.html)
 
-There is a companion slide deck: **`presentation.html`** — 22 slides, a
+There is a companion slide deck: **`presentation.html`** — 23 slides, a
 clickable pipeline simulator where you break the build on purpose, a
 failure-triage walkthrough, and a quiz. **Open it in a browser for the
 guided tour.** It is one self-contained file — no internet needed, works even
@@ -335,6 +335,7 @@ Lesson: green steps ≠ working software. The smoke test is the only job that lo
 - **Tests pass locally but fail in CI** — check versions: the workflow tests Node 20 **and** 22; run `node --version` locally (needs ≥20).
 - **The test job shows two entries** — that is the matrix: `test (node 20)` and `test (node 22)`. Both must be green.
 - **"YAML error" in Actions** — indentation matters: 2 spaces, never tabs; keep `node-version: "22"` quoted; and remember `environment:` belongs at job level, never inside a step.
+- **The run fails instantly with "This run likely failed because of a workflow file issue"** — GitHub rejected the file's *schema*, so there is no job and no log to read. The usual causes: a **job-level key inside `steps:`** (e.g. `environment:`), **`timeout-minutes` under `defaults.run:`** (it is a job-level key), or a tab character. Run `npm run lint` locally — it now checks the workflow's shape and names the offending key. (Valid YAML is not the same as a valid *workflow*; the allowed keys per level are listed in the GitHub *Workflow syntax* docs, and machine-readably in the JSON Schema at `json.schemastore.org/github-workflow.json`.)
 - **A secret-scan failure you did not cause** — read the filename it names. It found a credential-shaped string in a committed file: remove it, rotate it, and use a GitHub secret or OIDC instead.
 
 ## 📖 Glossary (one line each)
