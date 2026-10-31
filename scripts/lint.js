@@ -177,9 +177,94 @@ for (const file of walk(root)) {
 }
 console.log(`✔ secret scan: ${scanned} text file(s) checked, no committed credentials`);
 
+// --- Part 5: the workflow file's own shape ---------------------------------
+// LESSON FROM PRODUCTION: `timeout-minutes` under a workflow-level
+// `defaults.run:` looks harmless and is REJECTED by GitHub with a bare
+// "workflow file issue" — no job, no logs, nothing to debug from. This part
+// checks the keys GitHub accepts at each level, so a mistake like that dies
+// in the lint job instead of in a mystery failure.
+//
+// WHY: the workflow YAML is code too, and it deserves the same treatment as
+// the rest of the repo. The key lists below are the documented, allowed
+// keys — not a full parser, just enough to catch a misplaced key.
+const ALLOWED = {
+  top: ['name', 'run-name', 'on', 'permissions', 'env', 'defaults', 'concurrency', 'jobs'],
+  job: ['name', 'needs', 'if', 'permissions', 'environment', 'concurrency', 'outputs',
+        'env', 'defaults', 'steps', 'uses', 'with', 'timeout-minutes', 'runs-on',
+        'strategy', 'continue-on-error', 'container', 'services', 'secrets'],
+  defaultsRun: ['shell', 'working-directory'],
+};
+
+// Split the workflow into lines we can reason about, keeping indentation.
+const wfLines = workflow.split('\n').map((raw) => {
+  const indent = raw.length - raw.trimStart().length;
+  return { indent, text: raw.trim(), raw };
+});
+
+// 1) workflow-level keys
+for (const line of wfLines) {
+  if (line.text.startsWith('#')) continue;        // YAML comments are not keys
+  if (line.indent !== 0 || !line.text.endsWith(':')) continue;
+  const key = line.text.slice(0, -1);
+  if (!ALLOWED.top.includes(key)) {
+    check(`the workflow's top-level key "${key}" is valid`, false,
+      'unknown top-level keys make GitHub reject the whole file');
+  }
+}
+
+// 2) `defaults.run` only understands shell + working-directory
+const defaultsAt = wfLines.findIndex((l) => l.indent === 0 && l.text === 'defaults:');
+if (defaultsAt !== -1) {
+  for (let i = defaultsAt + 1; i < wfLines.length; i++) {
+    const line = wfLines[i];
+    if (line.text.startsWith('#')) continue;   // comments are not keys
+    if (line.indent === 0) break;            // next top-level key: block ends
+    if (line.indent === 4 && line.text.includes(':')) {
+      // Key = the text before the FIRST colon ("timeout-minutes: 10" -> "timeout-minutes")
+      const key = line.text.split(':')[0].trim();
+      check(`defaults.run may only set shell / working-directory (found "${key}")`,
+        ALLOWED.defaultsRun.includes(key),
+        'timeout-minutes belongs at JOB level, not here');
+    }
+  }
+}
+
+// 3) job-level keys + `needs:` targets that exist
+const jobsStart = wfLines.findIndex((l) => l.indent === 0 && l.text === 'jobs:');
+if (jobsStart !== -1) {
+  const jobNames = [];
+  for (let i = jobsStart + 1; i < wfLines.length; i++) {
+    const m = wfLines[i].text.match(/^([A-Za-z0-9_-]+):$/);
+    if (wfLines[i].indent === 2 && m) jobNames.push(m[1]);
+  }
+  let current = null;
+  for (let i = jobsStart + 1; i < wfLines.length; i++) {
+    const line = wfLines[i];
+    if (line.text.startsWith('#')) continue;   // comments are not keys
+    const m = line.text.match(/^([A-Za-z0-9_-]+):$/);
+    if (line.indent === 2 && m) { current = m[1]; continue; }
+    if (line.indent === 4 && line.text.includes(':')) {
+      const key = line.text.split(':')[0].trim();
+      check(`job "${current}" may use the key "${key}"`, ALLOWED.job.includes(key),
+        'a misplaced key makes GitHub reject the whole workflow file');
+    }
+    if (line.indent === 4 && line.text.startsWith('needs:')) {
+      // Strip any trailing comment: "needs: build   # only after a good build"
+      const wanted = line.text.slice('needs:'.length).split('#')[0].trim();
+      const names = wanted.startsWith('[')
+        ? wanted.replace(/[[\]]/g, '').split(',').map((s) => s.trim()).filter(Boolean)
+        : [wanted];
+      for (const dep of names) {
+        check(`job "${current}" needs the existing job "${dep}"`,
+          jobNames.includes(dep), 'a `needs:` that points nowhere stalls the pipeline');
+      }
+    }
+  }
+}
+
 // --- Verdict -----------------------------------------------------------------
 if (failures > 0) {
   console.error(`\nLint FAILED with ${failures} problem(s). Fix, commit, push.`);
   process.exit(1); // non-zero exit = the CI job goes red
 }
-console.log(`\nLint passed ✔ (${checks} checks: syntax, wiring, consistency, secrets)`);
+console.log(`\nLint passed ✔ (${checks} checks: syntax, wiring, consistency, secrets, workflow shape)`);

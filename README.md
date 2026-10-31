@@ -27,8 +27,8 @@ explained.
 | Robot inspectors check the recipe | **CI**: every change is automatically verified before it merges | `lint` + `test` jobs |
 | The delivery truck | **CD**: verified changes are published automatically | `build` → `deploy` jobs |
 | "Only from the main road" | **Release gate**: deploy only from a protected branch, never from a PR | the `if:` line in the `deploy` job |
-| The recipe card gets checked for typos | **Linting**: static rules that catch mistakes a compiler cannot | `scripts/lint.js` (19 checks) |
-| The taste test | **Automated tests**: a checklist that must pass for the change to be allowed | `test/` (11 tests) |
+| The recipe card gets checked for typos | **Linting**: static rules that catch mistakes a compiler cannot | `scripts/lint.js` (50 checks) |
+| The taste test | **Automated tests**: a checklist that must pass for the change to be allowed | `test/` (12 tests) |
 | The packed box | **Artifact**: an immutable, versioned build output | `dist/` + `BUILD_INFO.json` |
 | "Did the parcel actually arrive?" | **Smoke test**: verify the live thing after deploying it | the `smoke` job |
 | The head chef signing the order | **Environment protection rules**: a human approves production releases | `environment: production` |
@@ -118,8 +118,8 @@ skip is a feature: it means the log tells you exactly where the chain broke.
 
 ## 🏠 Local Mode (no GitHub needed — Node optional)
 
-- `npm run lint` — robot spell-check (19 checks: syntax, HTML wiring, project consistency, secret scan).
-- `npm test` — robot taste-test (11 tests: 8 unit tests for the counter + 3 integration tests for the linter itself).
+- `npm run lint` — robot spell-check (50 checks: syntax, HTML wiring, project consistency, secret scan, workflow shape).
+- `npm test` — robot taste-test (12 tests: 8 unit tests for the counter + 4 integration tests for the linter itself).
 - `npm run build` — pack the box into `dist/` (adds `BUILD_INFO.json`).
 - `npm start` — serve the **built** site at http://localhost:8080 (run `npm run build` first; the server prints a hint if you forget).
 - Why can't I just double-click `index.html`? → see Troubleshooting.
@@ -168,7 +168,7 @@ Knowing the limits of your tests is a senior skill. Ours:
 | Layer | What it means | Here? |
 |---|---|---|
 | **Unit** | one function, no I/O, milliseconds | ✅ 8 tests on `createCounter` |
-| **Integration** | your code + another real piece (here: the linter as a subprocess) | ✅ 3 tests on `scripts/lint.js` |
+| **Integration** | your code + another real piece (here: the linter as a subprocess) | ✅ 4 tests on `scripts/lint.js` |
 | **End-to-end (E2E)** | a real browser clicks the real page | ❌ not here — that needs Playwright, a dependency, and more runner minutes |
 | **Contract** | "does the API still match what callers expect?" | ❌ not here |
 | **Coverage** | "what % of lines did we execute?" | ❌ not here (a % is a hint, not a goal) |

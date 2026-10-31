@@ -85,15 +85,18 @@ concurrency:
   cancel-in-progress: true
 
 # ----------------------------------------------------------------------------
-# DEFAULT TIMEOUT — a safety net for every job in this workflow.
+# JOB TIMEOUTS — a safety net for every job in this workflow.
 # If a job hangs (a network call that never returns, an infinite loop), GitHub
 # would otherwise keep the runner busy and burn your monthly minutes. 10
 # minutes is far more than any job here needs; the whole pipeline runs in
 # well under two.
+#
+# NOTE: `timeout-minutes` is a JOB-level key. It is NOT valid inside the
+# workflow-level `defaults:` block — that block only understands `shell` and
+# `working-directory`. (GitHub rejects the whole file with a bare
+# "workflow file issue" if you get that wrong, and you get NO job logs to
+# work with. Our linter now checks this shape for exactly that reason.)
 # ----------------------------------------------------------------------------
-defaults:
-  run:
-    timeout-minutes: 10
 
 jobs:
   # ==========================================================================
@@ -103,6 +106,7 @@ jobs:
   # ==========================================================================
   lint:
     runs-on: ubuntu-latest   # a fresh GitHub-hosted Linux VM for every run
+    timeout-minutes: 10        # a hung step must not burn runner minutes
     # Job-level permissions: this job only needs to READ the code. If it ran
     # the deploy steps by accident, it still could not write to Pages.
     permissions:
@@ -134,6 +138,7 @@ jobs:
   # ==========================================================================
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10        # a hung step must not burn runner minutes
     permissions:
       contents: read
     strategy:
@@ -161,6 +166,7 @@ jobs:
   build:
     needs: [lint, test]
     runs-on: ubuntu-latest
+    timeout-minutes: 10        # a hung step must not burn runner minutes
     permissions:
       contents: read
     steps:
@@ -200,6 +206,7 @@ jobs:
     # THE GATE (read it aloud): "on main, and not a pull request".
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 10        # a hung step must not burn runner minutes
     permissions:
       contents: read
       pages: write
@@ -234,6 +241,7 @@ jobs:
   smoke:
     needs: deploy                    # only after a successful deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 10        # the smoke check retries for a while on purpose
     permissions:
       contents: read
     steps:

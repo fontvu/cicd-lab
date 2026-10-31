@@ -410,7 +410,7 @@ body.show-notes .notes::before{
         <p><span class="badge r">SECRETS</span> no credential-shaped string is committed</p>
       </div>
     </div>
-    <div class="mapping">19 checks, zero dependencies. ESLint is the same idea with 300 rules — the shape is identical: <b>a rule, a failure message, an exit code</b>.</div>
+    <div class="mapping">50 checks, zero dependencies. ESLint is the same idea with 300 rules — the shape is identical: <b>a rule, a failure message, an exit code</b>.</div>
     <aside class="notes">"Consistency" is the check people underestimate: rename an npm script locally, forget the workflow, and CI dies with a confusing "command not found" instead of a clear message. The secret scan is the other one worth automating — humans are bad at not committing .env files, machines are great at it.</aside>
   </section>
 
@@ -420,7 +420,7 @@ body.show-notes .notes::before{
     <table class="tbl">
       <tr><th>Layer</th><th>What it means</th><th>Here</th></tr>
       <tr><td><b>Unit</b></td><td>one function, no I/O, milliseconds</td><td>8 tests on <code>createCounter</code></td></tr>
-      <tr><td><b>Integration</b></td><td>your code + another real piece (here: the linter as a subprocess)</td><td>3 tests on <code>lint.js</code></td></tr>
+      <tr><td><b>Integration</b></td><td>your code + another real piece (here: the linter as a subprocess)</td><td>4 tests on <code>lint.js</code></td></tr>
       <tr><td><b>E2E</b></td><td>a real browser clicking the real page</td><td>❌ not here</td></tr>
     </table>
     <p class="mid"><span class="badge g">MATRIX</span> the test job runs <b>twice</b> — Node 20 and Node 22 — so one green check becomes two. <code>fail-fast: false</code> keeps both running so you see every broken runtime at once.</p>
@@ -811,7 +811,7 @@ const STAGES = [
   { name: 'Commit', icon: '📦', cmd: 'git push',
     log: '📦 Committed — the change is on the remote.' },
   { name: 'Lint', icon: '🔍', cmd: 'npm run lint',
-    log: '🔍 Lint passed — 19 checks, no violations.' },
+    log: '🔍 Lint passed — 50 checks, no violations.' },
   { name: 'Test', icon: '🍪', cmd: 'npm test',
     log: '🍪 Tests passed — 11/11 green.' },
   { name: 'Build', icon: '📦', cmd: 'npm run build',

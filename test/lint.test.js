@@ -83,3 +83,23 @@ test('lint FAILS (exit code 1) when a secret is committed', () => {
     fs.rmSync(sandbox, { recursive: true, force: true });
   }
 });
+
+test('lint FAILS (exit code 1) when the workflow misuses defaults.run', () => {
+  // Regression test for a real outage: `timeout-minutes` under a workflow
+  // level `defaults.run:` is rejected by GitHub with a bare "workflow file
+  // issue" — no job, no logs, nothing to debug from. The linter now catches
+  // the mistake locally, where you can still see the message.
+  const sandbox = makeSandbox();
+  try {
+    const file = path.join(sandbox, '.github', 'workflows', 'ci-cd.yml');
+    const broken = fs.readFileSync(file, 'utf8')
+      .replace('jobs:', 'defaults:\n  run:\n    timeout-minutes: 10\n\njobs:');
+    fs.writeFileSync(file, broken);
+
+    const result = runLint(sandbox);
+    assert.equal(result.status, 1, 'an invalid workflow key must fail the lint job');
+    assert.match(result.stderr, /defaults\.run/, 'the failure must name the offending key');
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
