@@ -1,0 +1,15 @@
+{
+  "name": "cicd-lab",
+  "version": "1.0.0",
+  "description": "A tiny zero-dependency static site (the Magic Button) with a real beginner-friendly CI/CD pipeline on GitHub Actions.",
+  "type": "module",
+  "scripts": {
+    "lint": "node --experimental-vm-modules scripts/lint.js",
+    "test": "node --test",
+    "build": "node scripts/build.js",
+    "start": "node -e \"const h=require('http'),f=require('fs'),p=require('path');h.createServer((q,s)=>{let u=q.url.split('?')[0];if(u==='/')u='/index.html';const fp=p.join('dist',u);f.readFile(fp,(e,d)=>{if(e){s.writeHead(404,{'Content-Type':'text/plain'});s.end('404 - run npm run build first');return;}s.writeHead(200,{'Content-Type':fp.endsWith('.css')?'text/css':fp.endsWith('.js')?'text/javascript':'text/html'});s.end(d);});}).listen(8080,()=>console.log('Preview the BUILT site at http://localhost:8080 (Ctrl+C to stop)'))\""
+  },
+  "keywords": ["cicd", "github-actions", "beginner", "teaching"],
+  "license": "MIT",
+  "engines": { "node": ">=20" }
+}

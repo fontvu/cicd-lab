@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Magic Button — cicd-lab</title>
+  <!-- WHY a <link> here: the page must load its styles before paint.
+       scripts/lint.js checks that this exact href="style.css" exists. -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>🪄 The Magic Button</h1>
+    <p>Press the button. Watch the number go up.<br>
+       This page was checked and delivered by a real CI/CD pipeline.</p>
+    <!-- The ids below are a CONTRACT: app.js looks them up by id,
+         and scripts/lint.js fails the build if any is missing. -->
+    <p id="count" class="count">0</p>
+    <button id="magic-button" type="button">✨ Press me</button>
+    <button id="reset-button" type="button">Reset</button>
+    <p class="hint">Built by robots 🤖 → 🚚 (see README.md)</p>
+  </main>
+  <!-- WHY type="module": app.js uses import (ESM). Modules are blocked on
+       file:// addresses — that is why you must serve this over http
+       (npm start). See README Troubleshooting. -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

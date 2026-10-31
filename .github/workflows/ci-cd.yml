@@ -1,0 +1,147 @@
+# ============================================================================
+# .github/workflows/ci-cd.yml — the whole CI/CD pipeline in one file.
+#
+# WHAT THIS FILE IS: a recipe GitHub follows automatically. Every time someone
+# pushes code or opens a Pull Request, GitHub spins up a fresh computer (a
+# "runner"), reads this file top to bottom, and does what it says. If any step
+# fails, the pipeline STOPS and shows a red X — that is the entire point of
+# CI: robots catch mistakes BEFORE friends ever see them.
+#
+# READ IT TOP TO BOTTOM. Every block has a plain-English comment.
+# The companion doc docs/WORKFLOW-EXPLAINED.md dissects each line.
+# ============================================================================
+
+# The name shown in the GitHub "Actions" tab.
+name: CI/CD
+
+# ----------------------------------------------------------------------------
+# TRIGGERS — when does this recipe run? (the "on" key; yes, that is the word)
+# ----------------------------------------------------------------------------
+on:
+  push:
+    # Run on every push to the main branch. A push to main is a RELEASE:
+    # it is allowed to reach the deploy job (see the `if:` gate there).
+    branches: [main]
+  pull_request:
+    # Also run on every Pull Request that targets main. Deploy is SKIPPED
+    # for PRs on purpose — a PR is a proposal ("inspect my homework"), not a
+    # release ("publish it"). That difference is the gate concept.
+    branches: [main]
+  # Let a human press a "Run workflow" button in the GitHub UI on demand.
+  # Runs the full pipeline and, on main, also deploys — handy for demos.
+  # (On any other branch it stops after build; see the deploy job's gate.)
+  workflow_dispatch:
+
+# ----------------------------------------------------------------------------
+# PERMISSIONS — the LEAST power the pipeline needs (safety principle).
+# By default a workflow token is broad; we shrink it on purpose:
+#   contents:read  → clone the repo (needed by the checkout action)
+#   pages:write    → upload the built site and publish it to Pages
+#   id-token:write → mint a short-lived OIDC token so the Pages deploy
+#                    proves "I am really this repo" WITHOUT any long-lived
+#                    secret stored in the repository. No secrets = nothing
+#                    to leak. (OIDC = OpenID Connect, a trust handshake.)
+# ----------------------------------------------------------------------------
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# ----------------------------------------------------------------------------
+# CONCURRENCY — only one pipeline may touch Pages at a time.
+# If you push twice quickly, the older run is CANCELLED so two runs never
+# race to publish different versions of the same site.
+# ----------------------------------------------------------------------------
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  # ==========================================================================
+  # JOB 1 of 4: lint — "spell check for code"
+  # Runs FIRST, in PARALLEL with test. It is cheap and fast on purpose:
+  # catch sloppy mistakes before spending runner time on anything heavier.
+  # ==========================================================================
+  lint:
+    runs-on: ubuntu-latest   # a fresh GitHub-hosted Linux VM for every run
+    steps:
+      - name: Get a copy of the code
+        uses: actions/checkout@v4   # official GitHub action: clones your repo
+      - name: Install Node.js 22
+        uses: actions/setup-node@v4 # official action: puts Node on the VM
+        with:
+          node-version: "22"        # pinned LTS = reproducible builds
+      - name: Check syntax and wiring
+        run: npm run lint           # our own zero-dependency checker
+
+  # ==========================================================================
+  # JOB 2 of 4: test — "taste test"
+  # Independent of lint (they run in parallel). If it fails, NOTHING
+  # downstream runs. That is the safety net the whole lab demonstrates.
+  # ==========================================================================
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get a copy of the code
+        uses: actions/checkout@v4
+      - name: Install Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"        # pinned LTS = reproducible builds
+      - name: Run the test suite
+        run: npm test               # bare "node --test": built into Node,
+                                    # finds test/*.test.js by itself — never
+                                    # pass a directory argument (that breaks
+                                    # on Windows/macOS with Node >= 22)
+
+  # ==========================================================================
+  # JOB 3 of 4: build — "pack the box"
+  # needs: [lint, test] means this job WAITS until both pass. If either
+  # failed, this job is SKIPPED — broken code never even gets packed.
+  # ==========================================================================
+  build:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get a copy of the code
+        uses: actions/checkout@v4
+      - name: Install Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"        # pinned LTS = reproducible builds
+      - name: Build the site into dist/
+        run: npm run build          # copies files + writes BUILD_INFO.json
+      - name: Upload the site as a Pages artifact
+        uses: actions/upload-pages-artifact@v3  # official action: hands the
+        with:                                    # dist/ "box" to the deploy
+          path: dist                              # job via GitHub's storage
+
+  # ==========================================================================
+  # JOB 4 of 4: deploy — "the delivery truck"
+  # THE GATE: this job runs ONLY when BOTH are true:
+  #   1. the branch is main (github.ref == 'refs/heads/main'), AND
+  #   2. the event is NOT a pull request.
+  # So: push to main deploys ✅ · manual "Run workflow" on main deploys ✅ ·
+  # PRs NEVER deploy ⏭️ · pushes or manual runs on other branches skip ⏭️.
+  # The `if:` line below is the gate — the single most important line here.
+  # ==========================================================================
+  deploy:
+    needs: build                    # only after a successful build
+    # THE GATE (read it aloud): "on main, and not a pull request".
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    # OPTIONAL EXERCISE (README exercise e): uncomment the next line to
+    # require a human "Approve" click before the truck leaves. That is an
+    # "environment approval gate" — CD with a human on the button.
+    # ⚠️ environment: is a JOB-level key — it must live HERE, at the same
+    # indentation as needs:/if:/runs-on:. Putting it inside a step (deeper
+    # indent, under a "- name:" line) makes INVALID YAML and GitHub will
+    # reject the whole workflow file.
+    # environment: github-pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tell GitHub we are deploying to Pages
+        uses: actions/configure-pages@v5
+      - name: Publish the site to GitHub Pages
+        uses: actions/deploy-pages@v4
+        id: deployment              # exposes the deployment URL as an
+                                    # output (steps.deployment.outputs.page_url)

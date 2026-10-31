@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🤖 CI/CD: The Robot Kitchen 🚚 — a kid-friendly deck</title>
+<style>
+/* ============================================================
+   CI/CD kid deck — ONE file, ZERO network. Everything (CSS + JS)
+   lives here so the deck works offline, even from file://.
+   Palette: warm cream paper, ink text, and the lab's status
+   colors (green = go, red = stop, amber = working).
+   ============================================================ */
+
+/* ---------- palette + base ---------- */
+:root{
+  --ink:#111111;
+  --paper:#ffffff;
+  --cream:#fff7ec;      /* warm page background */
+  --border:#e3d7c3;     /* warm hairline */
+  --brown:#7c2d12;      /* warm dark headings */
+  --green:#1a7f37;      /* success / go      */
+  --red:#cf222e;        /* failure / stop    */
+  --amber:#bf8700;      /* running / caution */
+  --term-bg:#0d1117;    /* fake terminal bg  */
+  --term-ink:#7ee787;   /* fake terminal text*/
+}
+
+*{box-sizing:border-box}
+
+html,body{height:100%}
+
+body{
+  margin:0;
+  overflow:hidden;                /* one slide fills the screen: no scrolling */
+  background:var(--cream);
+  color:var(--ink);
+  font-family:system-ui,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  font-size:1.4rem;               /* kid-big base text */
+  line-height:1.45;
+}
+
+/* ---------- slide plumbing ---------- */
+.slide{display:none;height:100%}
+.slide.active{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  padding:18px 28px 100px;        /* room for the fixed bottom control bar */
+  text-align:center;
+  animation:pop .35s ease;
+}
+@keyframes pop{from{opacity:.35;transform:scale(.985)}to{opacity:1;transform:none}}
+
+h1{
+  font-size:clamp(2.2rem,6vw,4rem);
+  line-height:1.1;
+  margin:.15em 0 .45em;
+  color:var(--brown);
+}
+p{margin:.35em 0}
+.big{font-size:clamp(1.6rem,3.4vw,2.4rem);font-weight:800}
+.mid{font-size:clamp(1.4rem,2.6vw,1.9rem);max-width:1050px}
+.small{font-size:1.1rem;color:#5b4a35}
+.def{font-size:1.25rem;font-weight:700}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  background:#f6efe3;border:1px solid var(--border);
+  border-radius:8px;padding:.08em .4em;font-size:.85em;
+}
+ul.bullets{list-style:none;padding:0;margin:0}
+ul.bullets li{margin:.35em 0}
+.card{
+  background:var(--paper);border:2px solid var(--border);
+  border-radius:18px;padding:16px 24px;
+  box-shadow:0 6px 18px rgba(124,45,18,.08);
+}
+.mapping{
+  margin-top:14px;background:#fff8e1;border:2px solid var(--amber);
+  border-radius:14px;padding:12px 18px;font-size:1.25rem;max-width:920px;
+}
+.mapping b{color:#7c4a03}
+.red-good{color:var(--red)}
+
+/* ---------- slide 4: animated pipeline map ---------- */
+.pipe{position:relative;display:flex;align-items:center;gap:6px;margin:8px 0;flex-wrap:nowrap}
+.pipe-box{
+  position:relative;z-index:1;background:var(--paper);
+  border:3px solid #8a6d3b;border-radius:16px;padding:12px 16px;
+  font-size:clamp(1.1rem,2vw,1.5rem);font-weight:700;white-space:nowrap;
+  box-shadow:0 4px 0 #e3d7c3;
+}
+.pipe-arrow{font-size:1.8rem;color:var(--amber);animation:nudge .8s ease-in-out infinite alternate}
+@keyframes nudge{from{transform:translateX(0)}to{transform:translateX(8px)}}
+.pipe-dot{
+  position:absolute;left:2%;top:50%;width:16px;height:16px;margin-top:-8px;
+  border-radius:50%;background:var(--red);z-index:0;
+  animation:travel 5s linear infinite;
+}
+@keyframes travel{from{left:2%}to{left:97%}}
+
+/* ---------- fixed bottom control bar ---------- */
+#controls{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+  padding:10px 14px;background:rgba(255,247,236,.97);
+  border-top:2px solid var(--border);
+}
+#controls button{font-size:1.1rem}
+#dots{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.dot{
+  width:14px;height:14px;border-radius:50%;padding:0;cursor:pointer;
+  border:2px solid #8a6d3b;background:#fff;
+}
+.dot.active{background:var(--amber);transform:scale(1.3)}
+#counter{font-weight:800;min-width:11ch}
+
+/* ---------- top progress bar ---------- */
+#topbar{position:fixed;top:0;left:0;height:7px;width:0;background:var(--amber);z-index:60;transition:width .3s ease}
+
+/* ---------- speaker notes panel ---------- */
+.notes{display:none}
+body.show-notes .notes{
+  display:block;position:fixed;left:50%;transform:translateX(-50%);
+  bottom:80px;width:min(940px,92vw);max-height:32vh;overflow-y:auto;
+  background:#fffbea;border:3px solid var(--amber);border-radius:14px;
+  padding:12px 18px;font-size:1.15rem;text-align:left;z-index:50;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);
+}
+body.show-notes .notes::before{
+  content:"🗒️ Speaker notes";display:block;font-weight:800;color:#7c4a03;margin-bottom:4px;
+}
+
+/* ---------- buttons ---------- */
+.btn{
+  font:inherit;font-size:1.2rem;font-weight:700;cursor:pointer;
+  border:0;border-radius:999px;padding:.65em 1.5em;min-height:48px; /* big touch targets */
+}
+.btn:active{transform:translateY(2px)}
+.nav-btn{
+  font:inherit;background:var(--paper);border:2px solid #8a6d3b;color:var(--ink);
+  border-radius:999px;padding:.45em 1.1em;min-height:44px;cursor:pointer;
+}
+.nav-btn:hover{background:#fff3dd}
+#btn-commit{background:var(--green);color:#fff;box-shadow:0 5px 0 #14622b;font-size:1.5rem}
+#btn-commit:active{box-shadow:0 2px 0 #14622b}
+#btn-fix{background:var(--amber);color:#fff;box-shadow:0 5px 0 #8a6500}
+#btn-fix:active{box-shadow:0 2px 0 #8a6500}
+
+/* ---------- slide 9: the simulator ---------- */
+.sim{width:min(1180px,96vw)}
+.stages{display:flex;align-items:stretch;justify-content:center;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.stage{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  border:3px solid #cfd6dd;border-radius:14px;background:#f4f6f8; /* ⚪ grey default */
+  padding:8px 10px;min-width:118px;font-size:1.05rem;
+}
+.stage-icon{font-size:1.7rem;line-height:1.2}
+.stage-name{font-weight:800}
+.stage-cmd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.72rem;color:#5b6570}
+.stage.running{border-color:var(--amber);background:#fff8e1}
+.stage.running .stage-icon{animation:spin 1s linear infinite}
+.stage.ok{border-color:var(--green);background:#dafbe1}
+.stage.failed{border-color:var(--red);background:#ffebe9;animation:shake .45s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+
+.sim-mid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;align-items:stretch}
+.sim-left{display:flex;flex-direction:column;gap:10px;text-align:left}
+.sim-controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#chk-sugar{width:22px;height:22px;vertical-align:middle;cursor:pointer}
+#chk-sugar-label{font-size:1.15rem;font-weight:700;cursor:pointer;user-select:none}
+.sim-msg{min-height:1.5em;font-weight:800;color:#7c4a03;margin:0}
+#sim-log{
+  margin:0;background:var(--term-bg);color:var(--term-ink);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:1.02rem;line-height:1.5;padding:12px 14px;border-radius:12px;
+  max-height:158px;overflow-y:auto;white-space:pre-wrap;
+}
+.confetti-zone{
+  position:relative;min-height:230px;border-radius:16px;overflow:hidden;
+  border:2px solid var(--border);
+  background:linear-gradient(#ffe9a8,#fff6dd); /* warm sky */
+}
+.road{
+  position:absolute;left:10px;right:10px;bottom:16px;height:56px;
+  border:3px dashed #a08040;border-radius:10px;background:#fdf3dc;
+}
+#truck{
+  position:absolute;left:-10%;bottom:6px;font-size:2.6rem;z-index:2;
+  transition:left 1.6s linear;               /* .drive just changes left → truck rolls */
+}
+#truck.drive{left:110%}
+.confetti{
+  position:absolute;top:-16px;width:10px;height:14px;border-radius:2px;z-index:1;
+  animation:fall 2.8s ease-in forwards;
+}
+@keyframes fall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1}
+  100%{transform:translateY(300px) rotate(720deg);opacity:.15}
+}
+
+/* ---------- slide 11: real commands + copy buttons ---------- */
+.cmd-list{list-style:none;padding:0;margin:0;text-align:left;max-width:940px}
+.cmd-list li{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--paper);border:2px solid var(--border);border-radius:14px;
+  padding:10px 16px;margin-bottom:10px;font-size:1.25rem;
+}
+.cmd-list code{font-size:1.05rem}
+.copy-btn{
+  font:inherit;font-size:1rem;cursor:pointer;border-radius:999px;
+  border:2px solid #8a6d3b;background:#fff;padding:.3em 1em;min-height:40px;
+}
+.copy-btn:hover{background:#fff3dd}
+.copy-btn:disabled{opacity:.55;cursor:default}
+
+/* ---------- slide 12: quiz ---------- */
+#quiz{width:min(1000px,94vw);display:flex;flex-direction:column;gap:12px}
+.q-card{background:var(--paper);border:2px solid var(--border);border-radius:16px;padding:12px 18px;text-align:left}
+.q-text{font-weight:800;margin:0 0 8px}
+.q-opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{
+  font:inherit;font-size:1.1rem;cursor:pointer;border-radius:999px;
+  border:2px solid #8a6d3b;background:#fff;padding:.4em 1.1em;
+}
+.opt:hover{background:#fff3dd}
+.opt.green{background:#dafbe1;border-color:var(--green);color:#0b3d1e;font-weight:800}
+.opt.red{background:#ffebe9;border-color:var(--red);color:#5c1015;animation:shake .45s}
+.opt:disabled{cursor:default}
+.q-feedback{min-height:1.5em;font-weight:800;margin:8px 0 0}
+.q-feedback.good{color:var(--green)}
+.q-feedback.bad{color:var(--red)}
+
+/* ---------- short projectors / narrow windows ---------- */
+@media (max-width:900px){
+  .sim-mid{grid-template-columns:1fr}
+  .confetti-zone{min-height:170px}
+}
+@media (max-height:760px){
+  body{font-size:1.2rem}
+  #sim-log{max-height:110px}
+  .confetti-zone{min-height:170px}
+  .stage{min-width:104px;padding:6px 8px}
+}
+</style>
+</head>
+<body>
+<div id="topbar" aria-hidden="true"></div>
+
+<main id="deck">
+
+  <!-- ============ SLIDE 1 · TITLE ============ -->
+  <section class="slide active">
+    <h1>🤖 CI/CD: The Robot Kitchen 🚚</h1>
+    <p class="big">How your code goes from your laptop to the whole world — checked and delivered by robots.</p>
+    <p class="small">A beginner's tour · press → to start</p>
+    <aside class="notes">Welcome! In 5 minutes you'll know what CI/CD means and you'll drive a real pipeline yourself. Everything today is about one idea: robots check the work, robots deliver it, and broken stuff never reaches friends.</aside>
+  </section>
+
+  <!-- ============ SLIDE 2 · THE OLD PAINFUL WAY ============ -->
+  <section class="slide">
+    <h1>The OLD way 😫</h1>
+    <ul class="bullets">
+      <li>You code late at night 🦉</li>
+      <li>You upload files by hand, one by one 📁</li>
+      <li>You forget ONE tiny file 🙈</li>
+      <li>The site breaks in front of everyone 💥</li>
+      <li>You fix it at 2am 😴</li>
+    </ul>
+    <p class="big">Deploy day = scary day.</p>
+    <aside class="notes">Ask: who has ever packed a bag and forgotten something? That's what deploying by hand feels like, but the whole school can see the mistake. This pain is WHY we let robots do it.</aside>
+  </section>
+
+  <!-- ============ SLIDE 3 · CI/CD IN ONE SENTENCE ============ -->
+  <section class="slide">
+    <h1>CI/CD in one sentence</h1>
+    <p class="big">Robots check every change (CI) and robots deliver it (CD) — broken stuff never reaches friends.</p>
+    <p class="def">CI = Continuous Integration = robot inspectors 🔍</p>
+    <p class="def">CD = Continuous Delivery = the delivery truck 🚚</p>
+    <aside class="notes">This is the whole talk on one slide — say it twice. CI is the inspectors, CD is the truck. Everything after this slide is just that sentence in detail.</aside>
+  </section>
+
+  <!-- ============ SLIDE 4 · PIPELINE MAP (animated) ============ -->
+  <section class="slide">
+    <h1>The pipeline 🛤️</h1>
+    <div class="pipe">
+      <div class="pipe-dot" aria-hidden="true"></div>
+      <div class="pipe-box">📦 Commit</div><span class="pipe-arrow">→</span>
+      <div class="pipe-box">🔍 Lint</div><span class="pipe-arrow">→</span>
+      <div class="pipe-box">🍪 Test</div><span class="pipe-arrow">→</span>
+      <div class="pipe-box">📦 Build</div><span class="pipe-arrow">→</span>
+      <div class="pipe-box">🚚 Deploy</div>
+    </div>
+    <p class="big">An assembly line for code.</p>
+    <aside class="notes">Walk left to right. Each box is one 'job' in our GitHub Actions file. Nothing skips ahead — the line moves one box at a time.</aside>
+  </section>
+
+  <!-- ============ SLIDE 5 · STAGE: LINT ============ -->
+  <section class="slide">
+    <h1>Stage 1 · Lint 🔍 — the spell check</h1>
+    <p class="mid">A robot reads your code like a teacher spell-checking an essay. Typos, missing brackets, messy lines — flagged.</p>
+    <div class="mapping">In the lab: job <b>"lint"</b> runs <code>npm run lint</code> — it parses every JS file and checks the HTML wiring. If it fails, the line stops right there.</div>
+    <aside class="notes">Lint is cheap and fast, so it runs first, in parallel with tests. Nobody ships with spelling mistakes — why ship with code mistakes?</aside>
+  </section>
+
+  <!-- ============ SLIDE 6 · STAGE: TEST ============ -->
+  <section class="slide">
+    <h1>Stage 2 · Test 🍪 — the taste test</h1>
+    <p class="mid">Robot tasters follow a checklist: Does the counter start at 0? Does it count up? What if someone asks for a half-cookie (a non-integer)? It must say NO.</p>
+    <div class="mapping">In the lab: job <b>"test"</b> runs <code>npm test</code> — 5 tiny robot taste-testers.</div>
+    <aside class="notes">A test is a checklist item. Failing means the recipe is wrong — not that the robot is mean. The robot is doing its job.</aside>
+  </section>
+
+  <!-- ============ SLIDE 7 · STAGE: BUILD ============ -->
+  <section class="slide">
+    <h1>Stage 3 · Build 📦 — pack the box</h1>
+    <p class="mid">Gather the page (HTML + CSS + JS) into one neat box called dist/. Stick on a label: version, date, commit.</p>
+    <div class="mapping">In the lab: job <b>"build"</b> runs <code>npm run build</code>, then hands the box to GitHub (the "artifact").</div>
+    <aside class="notes">Same ingredients → same box, every time. The box is called an artifact. Deploy never touches your source folder — only the box.</aside>
+  </section>
+
+  <!-- ============ SLIDE 8 · STAGE: DEPLOY ============ -->
+  <section class="slide">
+    <h1>Stage 4 · Deploy 🚚 — the delivery truck</h1>
+    <p class="mid">The truck carries the box to the giant library called GitHub Pages, where anyone with the link can read it.</p>
+    <div class="mapping">In the lab: job <b>"deploy"</b> — and the truck ONLY leaves for pushes to main. Homework proposals (PRs) never get a truck.</div>
+    <aside class="notes">Preview the gate concept: propose ≠ publish. Ask the kids when a truck should leave — only after the robots say yes.</aside>
+  </section>
+
+  <!-- ============ SLIDE 9 · INTERACTIVE SIMULATOR ============ -->
+  <section class="slide">
+    <h1>You drive the pipeline! 🎮</h1>
+    <div class="sim">
+      <div id="sim-stages" class="stages">
+        <div class="stage"><span class="stage-icon">📦</span><span class="stage-name">Commit</span><span class="stage-cmd">git push</span></div>
+        <div class="stage"><span class="stage-icon">🔍</span><span class="stage-name">Lint</span><span class="stage-cmd">npm run lint</span></div>
+        <div class="stage"><span class="stage-icon">🍪</span><span class="stage-name">Test</span><span class="stage-cmd">npm test</span></div>
+        <div class="stage"><span class="stage-icon">📦</span><span class="stage-name">Build</span><span class="stage-cmd">npm run build</span></div>
+        <div class="stage"><span class="stage-icon">🚚</span><span class="stage-name">Deploy</span><span class="stage-cmd">GitHub Actions</span></div>
+      </div>
+      <div class="sim-mid">
+        <div class="sim-left">
+          <div class="sim-controls">
+            <button id="btn-commit" class="btn" type="button">✏️ Commit code!</button>
+            <label id="chk-sugar-label"><input type="checkbox" id="chk-sugar"> 💥 Oops! Forgot the sugar!</label>
+            <button id="btn-fix" class="btn" type="button" hidden>🔧 Fix the code &amp; retry</button>
+          </div>
+          <p id="sim-msg" class="sim-msg" aria-live="polite"></p>
+          <pre id="sim-log" aria-live="polite">Terminal ready. Press ✏️ Commit code!</pre>
+        </div>
+        <div id="confetti-zone" class="confetti-zone">
+          <div class="road"><div id="truck">🚚</div></div>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">Presenter script: (1) click Commit — watch all five stages go green, truck drives, confetti. (2) tick the sugar checkbox, Commit again — watch it stop red at Test. (3) press Fix &amp; retry — full green run, truck, confetti. Ask the kids to predict each stage before it runs.</aside>
+  </section>
+
+  <!-- ============ SLIDE 10 · WHEN IT BREAKS ============ -->
+  <section class="slide">
+    <h1>When it breaks 🔴 — the GOOD news</h1>
+    <p class="mid">You forgot the sugar. The taste test fails ❌. The pipeline STOPS. The truck never leaves. You fix the recipe, the robots check again, everything goes green.</p>
+    <p class="big red-good">Red is good: the robots caught it BEFORE your friends saw it.</p>
+    <aside class="notes">This is the emotional core of the whole talk. Failure here is protection, not shame. Draw the loop: break → red → fix → rerun → green.</aside>
+  </section>
+
+  <!-- ============ SLIDE 11 · YOU TRY IT (real commands) ============ -->
+  <section class="slide">
+    <h1>Your turn 💻 — real commands</h1>
+    <ul class="cmd-list">
+      <li><code>git add . &amp;&amp; git commit -m "my change" &amp;&amp; git push</code> <button class="copy-btn" type="button">📋 Copy</button></li>
+      <li><code>npm run lint</code> <button class="copy-btn" type="button">📋 Copy</button></li>
+      <li><code>npm test</code> <button class="copy-btn" type="button">📋 Copy</button></li>
+      <li><code>npm run build</code> <button class="copy-btn" type="button">📋 Copy</button></li>
+      <li>On GitHub: open the Actions tab and watch the robots 🤖</li>
+    </ul>
+    <aside class="notes">Point to README 'Local Mode' — everything on this slide runs free on their own computer, no account needed for the first three. (The last line is prose, not a command — so it gets no Copy button.)</aside>
+  </section>
+
+  <!-- ============ SLIDE 12 · QUIZ ============ -->
+  <section class="slide">
+    <h1>Quiz time 🧠 — tap an answer</h1>
+    <div id="quiz"></div>
+    <aside class="notes">Ask the kids to shout an answer BEFORE tapping. Wrong answers are funny, not shameful — that's the point of a quiz. Right answers lock the question green; wrong ones shake and let you try again.</aside>
+  </section>
+
+  <!-- ============ SLIDE 13 · RECAP ============ -->
+  <section class="slide">
+    <h1>Recap 🎓</h1>
+    <ul class="bullets">
+      <li>Recipe = code 📝</li>
+      <li>Robot inspectors = CI 🔍🍪</li>
+      <li>Packing the box = Build 📦</li>
+      <li>Delivery truck = CD 🚚</li>
+    </ul>
+    <p class="big">Now go break the lab on purpose! 🔴→🟢</p>
+    <p class="small">Homework: README exercise (a). Red X = trophy.</p>
+    <aside class="notes">Homework is to break the lab on purpose and watch the robots save the day — README exercise (a). You just learned CI/CD. 🎉</aside>
+  </section>
+
+</main>
+
+<!-- ============ fixed bottom control bar ============ -->
+<div id="controls">
+  <button id="prev-btn" class="nav-btn" type="button">◀ Prev</button>
+  <div id="dots" aria-label="Slides"></div>
+  <button id="next-btn" class="nav-btn" type="button">Next ▶</button>
+  <button id="notes-btn" class="nav-btn" type="button" aria-pressed="false">🗒️ Notes</button>
+  <span id="counter">Slide 1 / 13</span>
+</div>
+
+<script>
+/* ============================================================
+   The whole deck's brain — plain JavaScript, no libraries,
+   no network. Read top to bottom; every block is commented
+   so a beginner can follow what it does and why.
+   ============================================================ */
+
+/* ---------- tiny helpers ---------- */
+// $() finds the FIRST element matching a CSS selector.
+const $ = (sel) => document.querySelector(sel);
+// sleep() pauses an async function for `ms` milliseconds —
+// that is how we make the pipeline feel like it takes real time.
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/* ============================================================
+   1) SLIDE NAVIGATION (buttons, dots, counter, top bar)
+   ============================================================ */
+const slides = Array.from(document.querySelectorAll('.slide')); // the 13 <section>s
+const dotsWrap = $('#dots');
+const counterEl = $('#counter');
+const topbar = $('#topbar');
+let current = 0; // index of the slide being shown (0-based)
+
+// Build one clickable progress dot per slide, generated from the
+// slides themselves — add a slide and the dots update automatically.
+const dots = slides.map((_, i) => {
+  const dot = document.createElement('button');
+  dot.type = 'button';
+  dot.className = 'dot';
+  dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+  dot.addEventListener('click', () => goTo(i));
+  dotsWrap.appendChild(dot);
+  return dot;
+});
+
+// Show slide number n. Math.max/min CLAMP so we can never leave the deck.
+function goTo(n) {
+  current = Math.max(0, Math.min(slides.length - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('active', i === current));
+  dots.forEach((d, i) => d.classList.toggle('active', i === current));
+  counterEl.textContent = 'Slide ' + (current + 1) + ' / ' + slides.length;
+  topbar.style.width = ((current + 1) / slides.length * 100) + '%';
+}
+const nextSlide = () => goTo(current + 1);
+const prevSlide = () => goTo(current - 1);
+
+$('#prev-btn').addEventListener('click', prevSlide);
+$('#next-btn').addEventListener('click', nextSlide);
+
+/* ============================================================
+   2) KEYBOARD — arrows / space flip slides, 'n' toggles notes
+   ============================================================ */
+document.addEventListener('keydown', (event) => {
+  // If focus is ON a button/checkbox, let Space do its native job
+  // (e.g. Space on "Commit code!" must CLICK it, not flip slides).
+  const el = event.target;
+  const onControl = el && (el.tagName === 'BUTTON' || el.tagName === 'INPUT' ||
+    el.tagName === 'A' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' ||
+    el.isContentEditable);
+
+  switch (event.key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      if (!onControl) event.preventDefault(); // stop the page scrolling
+      nextSlide();
+      break;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      if (!onControl) event.preventDefault();
+      prevSlide();
+      break;
+    case ' ':
+      if (!onControl) {
+        event.preventDefault();
+        nextSlide();
+      }
+      break;
+    case 'Home': goTo(0); break;
+    case 'End': goTo(slides.length - 1); break;
+    case 'n':
+    case 'N': toggleNotes();
+      break;
+  }
+});
+
+/* ============================================================
+   3) SPEAKER NOTES — toggle a panel with the 'n' key or button
+   ============================================================ */
+const notesBtn = $('#notes-btn');
+function toggleNotes() {
+  const on = document.body.classList.toggle('show-notes');
+  notesBtn.setAttribute('aria-pressed', String(on));
+}
+notesBtn.addEventListener('click', toggleNotes);
+
+/* ============================================================
+   4) PIPELINE SIMULATOR — a tiny state machine
+      states: idle -> running -> (failed | done)
+      plus `currentStage`: which stage index we are on.
+   ============================================================ */
+// The five stages, in order. `log` is the kid-friendly line the
+// fake terminal prints when that stage succeeds.
+const STAGES = [
+  { name: 'Commit', icon: '📦', cmd: 'git push',
+    log: '☁️ Committed! Your code flew to the robot cloud.' },
+  { name: 'Lint', icon: '🔍', cmd: 'npm run lint',
+    log: '🔍 Spell check passed — every word is right.' },
+  { name: 'Test', icon: '🍪', cmd: 'npm test',
+    log: '🍪 Taste test passed — sweet!' },
+  { name: 'Build', icon: '📦', cmd: 'npm run build',
+    log: '📦 Box packed: dist/ ready, label attached.' },
+  { name: 'Deploy', icon: '🚚', cmd: 'GitHub Actions',
+    log: '🚚 Truck rolling… 🏠 Delivered! Friends can see it! 🎉' },
+];
+
+const simStages = $('#sim-stages');  // the five pill elements
+const simLog = $('#sim-log');        // the fake terminal <pre>
+const chkSugar = $('#chk-sugar');    // the "forgot the sugar" bug switch
+const btnCommit = $('#btn-commit');
+const btnFix = $('#btn-fix');
+const simMsg = $('#sim-msg');        // reassuring message area
+const truck = $('#truck');
+const confettiZone = $('#confetti-zone');
+
+let state = 'idle';      // 'idle' | 'running' | 'failed' | 'done'
+let currentStage = 0;
+
+// Print one line into the fake terminal and keep it scrolled to the
+// bottom so the newest robot message is always visible.
+function logLine(text) {
+  simLog.textContent += (simLog.textContent ? '\n' : '') + text;
+  simLog.scrollTop = simLog.scrollHeight;
+}
+
+// Put one pill into a visual state:
+// 'default' (grey, its own emoji) | 'running' (spinning 🔄, amber)
+// 'ok' (green, ✅) | 'failed' (red, ❌, shake)
+function paintStage(i, mode) {
+  const pill = simStages.children[i];
+  const iconEl = pill.querySelector('.stage-icon');
+  pill.classList.remove('running', 'ok', 'failed');
+  if (mode === 'running') {
+    pill.classList.add('running');
+    iconEl.textContent = '🔄';
+  } else if (mode === 'ok') {
+    pill.classList.add('ok');
+    iconEl.textContent = '✅';
+  } else if (mode === 'failed') {
+    pill.classList.add('failed');
+    iconEl.textContent = '❌';
+  } else {
+    iconEl.textContent = STAGES[i].icon; // back to its own emoji
+  }
+}
+
+// Everything back to a clean slate before (re)running the line.
+function resetUI() {
+  state = 'idle';
+  currentStage = 0;
+  for (let i = 0; i < STAGES.length; i++) paintStage(i, 'default');
+  simLog.textContent = 'Terminal ready. Press ✏️ Commit code!';
+  simMsg.textContent = '';
+  btnFix.hidden = true;
+  // Park the truck instantly (no funny backwards drive): pause the
+  // CSS transition, snap it home, force a reflow, then restore it.
+  truck.classList.remove('drive');
+  truck.style.transition = 'none';
+  truck.style.left = '-10%';
+  void truck.offsetWidth; // force reflow so the next .drive animates fresh
+  truck.style.transition = '';
+  confettiZone.replaceChildren(); // sweep away any old confetti bits
+}
+
+// Run stage i, then i+1, then i+2 … sequentially. This IS the pipeline.
+async function runStage(i) {
+  currentStage = i;
+  if (i === STAGES.length) { state = 'done'; return; } // all five passed 🎉
+  const stage = STAGES[i];
+
+  // --- mark the pill "running": spinning 🔄, amber border ---
+  paintStage(i, 'running');
+  logLine('⏳ ' + stage.name + ' — running "' + stage.cmd + '" …');
+  await sleep(800); // the robots need a moment to look busy :)
+
+  // --- FAILURE BRANCH: the sugar bug only bites at Test (stage 2) ---
+  if (i === 2 && chkSugar.checked) {
+    paintStage(i, 'failed');
+    logLine('🤢 YUCK! This cookie has NO SUGAR! Taste test FAILED ❌');
+    logLine('🛑 Pipeline STOPPED — the truck never leaves. Fix the recipe and retry.');
+    logLine('💛 The robots caught it BEFORE your friends saw it!');
+    simMsg.textContent = '💛 No worries — the robots caught it BEFORE your friends saw it. Fix the recipe and retry!';
+    btnFix.hidden = false;
+    state = 'failed';
+    return; // pipeline halts — build & deploy never run. Red is good!
+  }
+
+  // --- SUCCESS BRANCH ---
+  logLine(stage.log);
+  paintStage(i, 'ok');
+
+  if (i === 4) {
+    // Deploy: send the truck down the road, THEN celebrate.
+    truck.classList.add('drive');      // CSS transition rolls it left→right
+    await sleep(1700);                 // matches the 1.6s CSS transition
+    confetti();                        // 🎉 ~60 bits of joy
+    runStage(i + 1);                   // → i === 5 → state = 'done'
+    return;
+  }
+  await sleep(250); // tiny beat between stages keeps the rhythm
+  runStage(i + 1);
+}
+
+// ✏️ Commit code! — start (or restart) the whole pipeline.
+btnCommit.addEventListener('click', () => {
+  if (state === 'running') return; // ignore clicks while the robots work
+  resetUI();
+  state = 'running';
+  runStage(0);
+});
+
+// 🔧 Fix the code & retry — put the sugar back, rerun everything green.
+btnFix.addEventListener('click', () => {
+  chkSugar.checked = false; // the recipe is fixed — sugar is back!
+  resetUI();
+  logLine('🔧 Fixed the recipe — added the sugar 🍬. Rerunning the robots…');
+  state = 'running';
+  runStage(0); // runs fully green: the sugar checkbox is unchecked now
+});
+
+/* ============================================================
+   5) CONFETTI — ~60 absolutely-positioned bits of joy, then
+   cleaned out of the DOM so the page stays tidy.
+   ============================================================ */
+function confetti() {
+  for (let i = 0; i < 60; i++) {
+    const bit = document.createElement('div');
+    bit.className = 'confetti';
+    bit.style.left = (Math.random() * 100) + '%';               // anywhere across
+    bit.style.background = 'hsl(' + Math.floor(Math.random() * 360) + ', 90%, 55%)'; // any bright color
+    bit.style.animationDelay = (Math.random() * 0.5) + 's';     // stagger the burst
+    confettiZone.appendChild(bit);
+  }
+  // After the party (2.8s fall + up to 0.5s delay), sweep up.
+  setTimeout(() => confettiZone.replaceChildren(), 3200);
+}
+
+/* ============================================================
+   6) QUIZ — 3 questions, instant feedback, retry allowed
+   ============================================================ */
+const QUIZ = [
+  { q: 'What does CI stand for?',
+    options: ['Continuous Ice-cream', 'Continuous Integration', 'Crazy Robots'],
+    answer: 1 },
+  { q: 'A taste test fails. What happens?',
+    options: ['Broken code goes live anyway', 'The pipeline stops — robots protect the friends', 'The computer cries'],
+    answer: 1 },
+  { q: 'What does the delivery truck (CD) do?',
+    options: ['Cooks dinner', 'Carries the finished box to friends', 'Closes the door'],
+    answer: 1 },
+];
+
+function renderQuiz() {
+  const wrap = $('#quiz');
+  QUIZ.forEach((item, qi) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+
+    const q = document.createElement('p');
+    q.className = 'q-text';
+    q.textContent = (qi + 1) + '. ' + item.q;
+    card.appendChild(q);
+
+    const opts = document.createElement('div');
+    opts.className = 'q-opts';
+
+    const feedback = document.createElement('p');
+    feedback.className = 'q-feedback';
+
+    item.options.forEach((label, oi) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'opt';
+      b.textContent = label;
+      b.addEventListener('click', () => {
+        if (oi === item.answer) {
+          b.classList.add('green');
+          feedback.textContent = '🎉 Right!';
+          feedback.className = 'q-feedback good';
+          // Correct! Lock this question so it stays answered.
+          opts.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+        } else {
+          b.classList.add('red');   // red + shake: funny, not shameful
+          b.disabled = true;        // this wrong one is out…
+          feedback.textContent = 'Oops — try again!';
+          feedback.className = 'q-feedback bad';
+          // …but the OTHER options stay clickable (retry allowed).
+        }
+      });
+      opts.appendChild(b);
+    });
+
+    card.appendChild(opts);
+    card.appendChild(feedback);
+    wrap.appendChild(card);
+  });
+}
+
+/* ============================================================
+   7) COPY BUTTONS (slide 11) — must work even from file://
+   ------------------------------------------------------------
+   navigator.clipboard is DISABLED on file:// pages (and on plain
+   http), so we have a two-step plan, and if both steps fail we
+   give up gracefully instead of lying to the user.
+   ============================================================ */
+async function copyText(text) {
+  // Plan A: the modern async clipboard API (needs a secure context).
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      /* Plan A refused — fall through to Plan B. */
+    }
+  }
+  // Plan B: hidden <textarea> + the classic execCommand('copy').
+  // This works from file:// in all the old-and-new browsers we care about.
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';           // hidden, but still selectable
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+document.querySelectorAll('.copy-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    // The command to copy lives in the <code> next to this button.
+    const codeEl = btn.closest('li').querySelector('code');
+    const ok = await copyText(codeEl.textContent);
+    if (ok) {
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => { btn.textContent = '📋 Copy'; }, 1500);
+    } else {
+      // Both plans failed — disable gracefully with an honest hint.
+      btn.disabled = true;
+      btn.textContent = '⚠️ Select the text to copy';
+    }
+  });
+});
+
+/* ============================================================
+   8) START THE SHOW
+   ============================================================ */
+renderQuiz();  // build the three quiz questions from the data above
+resetUI();     // grey pills + fresh terminal welcome line
+goTo(0);       // activate slide 1, dots, counter, and top progress bar
+</script>
+</body>
+</html>
