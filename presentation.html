@@ -218,22 +218,27 @@ body.show-notes .notes::before{
 .copy-btn:hover{background:#fff3dd}
 .copy-btn:disabled{opacity:.55;cursor:default}
 
-/* ---------- slide 12: quiz ---------- */
-#quiz{width:min(1000px,94vw);display:flex;flex-direction:column;gap:12px}
-.q-card{background:var(--paper);border:2px solid var(--border);border-radius:16px;padding:12px 18px;text-align:left}
-.q-text{font-weight:800;margin:0 0 8px}
-.q-opts{display:flex;flex-wrap:wrap;gap:8px}
+/* ---------- slide 21: quiz (two columns, so all six questions fit) -------- */
+#quiz{
+  width:min(1100px,94vw);
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;align-content:start;text-align:left;
+}
+.q-card{background:var(--paper);border:2px solid var(--border);border-radius:14px;padding:10px 14px}
+.q-text{font-weight:800;margin:0 0 6px;font-size:1.02rem}
+.q-opts{display:flex;flex-wrap:wrap;gap:6px}
 .opt{
-  font:inherit;font-size:1.1rem;cursor:pointer;border-radius:999px;
-  border:2px solid #8a6d3b;background:#fff;padding:.4em 1.1em;
+  font:inherit;font-size:.95rem;cursor:pointer;border-radius:999px;
+  border:2px solid #8a6d3b;background:#fff;padding:.3em .9em;min-height:38px;
 }
 .opt:hover{background:#fff3dd}
 .opt.green{background:#dafbe1;border-color:var(--green);color:#0b3d1e;font-weight:800}
 .opt.red{background:#ffebe9;border-color:var(--red);color:#5c1015;animation:shake .45s}
 .opt:disabled{cursor:default}
-.q-feedback{min-height:1.5em;font-weight:800;margin:8px 0 0}
+.q-feedback{min-height:1.2em;font-weight:800;margin:6px 0 0;font-size:.95rem}
 .q-feedback.good{color:var(--green)}
 .q-feedback.bad{color:var(--red)}
+@media (max-width:820px){ #quiz{grid-template-columns:1fr} }
 
 /* ---------- intern-level slides: columns, tables, badges, code ---------- */
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:min(1120px,94vw);text-align:left}
@@ -302,6 +307,11 @@ body.show-notes .notes::before{
   .tbl{font-size:.92rem}
   .code{font-size:.84rem}
   .cols .card{font-size:.98rem}
+  /* the quiz is the densest slide — shrink it so all six questions fit */
+  .q-card{padding:7px 11px}
+  .q-text{font-size:.92rem;margin-bottom:4px}
+  .opt{font-size:.85rem;padding:.25em .7em;min-height:34px}
+  #quiz{gap:7px}
 }
 @media (max-height:760px){
   body{font-size:1.12rem}
