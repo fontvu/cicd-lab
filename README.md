@@ -22,7 +22,7 @@ explained.
 
 ## 🎤 The 5-minute kid talk (presentation.html)
 
-There is a companion slide deck: **`presentation.html`**. It tells the same story with pictures (a robot kitchen 🍪), includes a clickable pipeline simulator where you can break the build on purpose, and a quiz. **Open it in a browser for a kid-friendly tour.** It is one self-contained file — no internet needed, works even when emailed.
+There is a companion slide deck: **`presentation.html`**. It tells the same story with pictures (a robot kitchen 🍪), includes a clickable pipeline simulator where you can break the build on purpose, and a quiz. **Open it in a browser for a kid-friendly tour.** It is one self-contained file — no internet needed, works even when emailed. And because `npm run build` copies it into `dist/`, the deck also goes live with the site: once you finish the Quickstart, it is at `https://<your-username>.github.io/cicd-lab/presentation.html` (this repo's own copy: <https://fontvu.github.io/cicd-lab/presentation.html>).
 
 ## 📋 Prerequisites (5 minutes, free)
 
