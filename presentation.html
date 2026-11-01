@@ -242,6 +242,18 @@ body.show-notes .notes::before{
 .q-feedback.bad{color:var(--red)}
 @media (max-width:820px){ .quiz-wrap{grid-template-columns:1fr} }
 
+/* ---------- real screenshots of the Actions UI (embedded, still one file) -- */
+.shot{
+  display:block;margin:8px auto;border:1px solid var(--border);border-radius:10px;
+  box-shadow:0 4px 14px rgba(0,0,0,.12);max-width:100%;height:auto;background:#fff;
+}
+.shot.wide{width:min(1000px,92vw)}
+.shot-card{padding:12px 14px;text-align:center}
+.shot-card .shot{width:100%;max-width:420px}
+.shot-card .small{margin:.4em 0 0}
+/* the five-step arc on slide 2 must wrap rather than overflow on a narrow screen */
+.pipe{flex-wrap:wrap;justify-content:center}
+
 /* ---------- intern-level slides: columns, tables, badges, code ---------- */
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:min(1120px,94vw);text-align:left}
 .cols .card{font-size:1.06rem;line-height:1.4}
@@ -331,147 +343,259 @@ body.show-notes .notes::before{
   <section class="slide">
     <h1>🚀 CI/CD — from commit to production</h1>
     <p class="mid">A guided tour of the pipeline in this repo: what runs, what it protects you from, and what actually breaks in the real world.</p>
-    <p class="small">23 slides · interactive · press → to start</p>
+    <p class="small">31 slides · interactive · press → to start</p>
     <aside class="notes">Frame the session: this session is about the decisions behind the pipeline rather than the tooling itself. Each stage answers one question: what can go wrong here, and which control catches it? The implementation lives in a separate repository (the lab); this deck covers the reasoning you would be expected to defend in a code review or an audit.</aside>
   </section>
 
-  <!-- ============ SLIDE 2 · WHY PIPELINES EXIST ============ -->
+  <!-- ============ SLIDE 2 · WHAT SRE HAS BEEN DOING ============ -->
   <section class="slide">
-    <h1>Why pipelines exist</h1>
-    <ul class="bullets">
-      <li><b>Integration conflict</b> — many people merge into one branch; <code>main</code> breaks frequently and attribution becomes contentious.</li>
-      <li><b>Manual release</b> — the same twelve steps every Friday; omit one file and the release is defective.</li>
-      <li><b>Slow feedback</b> — the bug is found by a user, three days after the commit.</li>
-    </ul>
-    <div class="mapping">Every stage of a pipeline exists to <b>attack one of these three</b>. When a stage has no failure mode it protects against, it is ceremony — delete it.</div>
-    <aside class="notes">Ask the group: how many manual steps does your release have? That number is your risk surface. CI/CD is not about speed for its own sake — it is about shrinking the number of things a human can forget.</aside>
-  </section>
-
-  <!-- ============ SLIDE 3 · VOCABULARY ============ -->
-  <section class="slide">
-    <h1>The vocabulary you will be asked about</h1>
-    <table class="tbl">
-      <tr><th>Term</th><th>What it actually means</th></tr>
-      <tr><td><b>CI</b> — Continuous Integration</td><td>Every change is verified automatically (lint + test) <i>before</i> it is allowed to merge.</td></tr>
-      <tr><td><b>Continuous Deployment</b></td><td>Green on <code>main</code> → it ships, unattended.</td></tr>
-      <tr><td><b>Continuous Delivery</b></td><td>Green on <code>main</code> → it is <i>ready</i> to ship; a human approves the release.</td></tr>
-      <tr><td><b>Pipeline</b></td><td>The whole chain of jobs: commit → lint → test → build → deploy → smoke.</td></tr>
-      <tr><td><b>Gate</b></td><td>A condition that decides whether a job runs. Ours: <code>if: on main and not a PR</code>.</td></tr>
-      <tr><td><b>Artifact</b></td><td>The built, immutable output (<code>dist/</code>) handed from build to deploy.</td></tr>
-    </table>
-    <aside class="notes">The distinction people get wrong in interviews: delivery vs deployment. Both are "CD". The difference is only whether a human presses the button — and that is a risk decision, not a technical one. Ours is continuous deployment until you add a required reviewer to the production environment.</aside>
-  </section>
-
-  <!-- ============ SLIDE 4 · HOW ACTIONS WORKS ============ -->
-  <section class="slide">
-    <h1>How GitHub Actions actually works</h1>
-    <div class="cols">
-      <div class="card">
-        <p><b>1. Event</b> — a push, a PR, a schedule.</p>
-        <p><b>2. Workflow</b> — the YAML file in <code>.github/workflows/</code> that says what to do.</p>
-        <p><b>3. Runner</b> — a fresh, throwaway VM. One per job. Destroyed afterwards — <b>state never leaks between runs</b>.</p>
-        <p><b>4. Job → steps</b> — each step is one command or one action.</p>
-      </div>
-      <div class="card">
-<pre class="code"><span class="c"># the smallest possible workflow</span>
-<span class="k">on</span>: [push]
-<span class="k">jobs</span>:
-  <span class="k">build</span>:
-    <span class="k">runs-on</span>: ubuntu-latest
-    <span class="k">steps</span>:
-      - <span class="k">run</span>: npm run build</pre>
-        <p class="small">A workflow is just YAML the platform interprets. The runner is not your laptop — it is a clean machine, every time.</p>
-      </div>
-    </div>
-    <aside class="notes">The "ephemeral runner" idea is the one that changes how you debug: you cannot SSH into a runner, and you cannot rely on a file you left there yesterday. Everything the job needs must be in the workflow or fetched by it. That is why the pipeline re-installs Node every single run.</aside>
-  </section>
-
-  <!-- ============ SLIDE 5 · THE GRAPH ============ -->
-  <section class="slide">
-    <h1>The pipeline, end to end</h1>
+    <h1>What SRE has been doing, step by step</h1>
+    <p class="mid">This is not a new idea. It is a direction the industry has been walking for twenty years — and this pipeline is where that walk currently ends.</p>
     <div class="pipe">
-      <span class="pipe-box">📦 Commit</span>
+      <span class="pipe-box">Manual release</span>
       <span class="pipe-arrow">→</span>
-      <span class="pipe-box">🔍 Lint</span>
+      <span class="pipe-box">Scripted release</span>
       <span class="pipe-arrow">→</span>
-      <span class="pipe-box">🍪 Test</span>
+      <span class="pipe-box">Verify every change</span>
       <span class="pipe-arrow">→</span>
-      <span class="pipe-box">📦 Build</span>
+      <span class="pipe-box">Release automatically</span>
       <span class="pipe-arrow">→</span>
-      <span class="pipe-box">🚚 Deploy</span>
-      <span class="pipe-arrow">→</span>
-      <span class="pipe-box">🌐 Smoke</span>
+      <span class="pipe-box">Gated, evidenced delivery</span>
       <span class="pipe-dot"></span>
     </div>
-    <p class="mid"><code>lint</code> ∥ <code>test</code> (parallel) → <code>build</code> → <code>deploy</code> → <code>smoke</code></p>
-    <div class="mapping">Parallel jobs save wall-clock time. The chain after them is a <b>dependency graph</b>: each job declares what it <code>needs</code>, and GitHub works out the order.</div>
-    <aside class="notes">Point at the graph, not the boxes: lint and test have no `needs:` so they start together; build has `needs: [lint, test]` so it waits for both. When one fails, the rest are skipped — grey, not red. Skipped is a different signal from failed: skipped means "we never got there", failed means "we tried and it broke".</aside>
+    <div class="mapping">Each step removed a specific failure mode: <b>toil</b> (people copying steps), <b>drift</b> (scripts that rot), <b>integration risk</b> (big infrequent batches), <b>uncontrolled change</b> (anything reaching production unverified), and finally <b>unprovable change</b> (no record of what shipped). The last one is why this is also an audit topic.</div>
+    <aside class="notes">Do not lecture here — narrate. The question to put to the room: "which of these five steps does your organisation currently sit at?" Most organisations are between two and three, and the gap between "scripted" and "verified" is where audit findings live. The point to land: the pipeline is not a tooling preference, it is the answer to a series of specific failure modes, and it is also where the evidence trail comes from.</aside>
   </section>
 
-  <!-- ============ SLIDE 6 · LINT ============ -->
+  <!-- ============ SLIDE 3 · VOCABULARY: THE REPOSITORY ============ -->
   <section class="slide">
-    <h1>Job 1 · Lint — rules, not opinions</h1>
-    <p class="mid">A linter is a program that reads your code and reports the issues your team has defined rules for.</p>
+    <h1>Vocabulary 1 — the repository</h1>
+    <table class="tbl">
+      <tr><th>Term</th><th>In plain terms</th><th>You will see it here</th></tr>
+      <tr><td><b>repository</b> (repo)</td><td>the project: its files and its full history, held on a server</td><td><code>github.com/fontvu/cicd-lab</code></td></tr>
+      <tr><td><b>commit</b></td><td>one saved change, with a message and a unique ID</td><td><code>4a1c7f0</code> in <code>BUILD_INFO.json</code></td></tr>
+      <tr><td><b>branch</b></td><td>a parallel line of work, so a half-finished change cannot land</td><td><code>feature/my-change</code></td></tr>
+      <tr><td><b>main</b></td><td>the branch that holds released work — the only one that may deploy</td><td>the <code>deploy</code> job's gate</td></tr>
+      <tr><td><b>working tree</b></td><td>the files as they are on your machine right now</td><td>the folder you cloned</td></tr>
+      <tr><td><b>clone</b></td><td>download a copy of the repository</td><td><code>git clone</code></td></tr>
+      <tr><td><b>push</b></td><td>upload your commits to the server</td><td><code>git push</code></td></tr>
+      <tr><td><b>fork</b></td><td>your own copy of someone else's repository, under your account</td><td>the <i>Fork</i> button</td></tr>
+    </table>
+    <aside class="notes">Keep this brisk — the audience is IT-literate but new to this domain. The two ideas that matter most: a commit is identified by an ID that never changes, and main is the branch the organisation has declared as released. Everything later in the deck leans on those two facts — the smoke test compares commit IDs, and the gate compares branch names.</aside>
+  </section>
+
+  <!-- ============ SLIDE 4 · VOCABULARY: THE CHANGE ============ -->
+  <section class="slide">
+    <h1>Vocabulary 2 — a change, from idea to release</h1>
+    <table class="tbl">
+      <tr><th>Term</th><th>In plain terms</th><th>You will see it here</th></tr>
+      <tr><td><b>pull request</b> (PR)</td><td>a formal proposal to merge one branch into another, with the difference attached</td><td>the <i>Pull requests</i> tab</td></tr>
+      <tr><td><b>review</b></td><td>a person reads the difference and approves it — the human gate</td><td><i>Approve</i> / <i>Request changes</i></td></tr>
+      <tr><td><b>merge</b></td><td>combine the branch into <code>main</code>; the history is kept</td><td>the <i>Merge</i> button</td></tr>
+      <tr><td><b>protected branch</b></td><td>a branch where the rules are enforced automatically</td><td><i>Settings → Branches</i></td></tr>
+      <tr><td><b>required status checks</b></td><td>merge is blocked until the named checks have passed</td><td><code>lint</code>, <code>test</code>, <code>build</code></td></tr>
+      <tr><td><b>release</b></td><td>the change goes live for users</td><td>the <code>deploy</code> job</td></tr>
+      <tr><td><b>rollback</b></td><td>return to the previous good state — normally a new commit that undoes the last one</td><td><code>git revert</code> + push</td></tr>
+    </table>
+    <aside class="notes">The distinction to underline: a PR is a proposal and a merge is a release. A pull request is reviewed by a person and verified by a machine — neither replaces the other. Protected branches are the mechanism that stops a human with write access from skipping both, which is why an auditor will ask whether main is protected.</aside>
+  </section>
+
+  <!-- ============ SLIDE 5 · VOCABULARY: THE PIPELINE ============ -->
+  <section class="slide">
+    <h1>Vocabulary 3 — the pipeline itself</h1>
+    <table class="tbl">
+      <tr><th>Term</th><th>In plain terms</th><th>You will see it here</th></tr>
+      <tr><td><b>workflow</b></td><td>the YAML recipe that describes the whole pipeline</td><td><code>.github/workflows/ci-cd.yml</code></td></tr>
+      <tr><td><b>trigger</b></td><td>the event that starts a run</td><td><code>push</code>, <code>pull_request</code>, manual</td></tr>
+      <tr><td><b>job</b></td><td>one station on the line, with its own machine</td><td><code>lint</code>, <code>test</code>, <code>build</code>, <code>deploy</code>, <code>smoke</code></td></tr>
+      <tr><td><b>step</b></td><td>one task inside a job</td><td><code>npm run lint</code></td></tr>
+      <tr><td><b>action</b></td><td>a reusable step written by someone else</td><td><code>actions/checkout@v4</code></td></tr>
+      <tr><td><b>runner</b></td><td>the throwaway machine a job runs on; it is destroyed afterwards</td><td><code>ubuntu-latest</code></td></tr>
+      <tr><td><b>matrix</b></td><td>run one job several ways at once</td><td>Node 20 <i>and</i> Node 22</td></tr>
+      <tr><td><b>artifact</b></td><td>the packaged output handed to the next job</td><td><code>dist/</code></td></tr>
+      <tr><td><b>environment</b></td><td>a named target that can carry its own rules</td><td><code>production</code></td></tr>
+      <tr><td><b>gate</b></td><td>the condition that decides whether a job runs at all</td><td><code>if:</code> on the deploy job</td></tr>
+    </table>
+    <aside class="notes">The mental model to leave behind: a trigger starts a run, a run contains jobs, a job contains steps, and each job gets its own fresh machine. "Fresh" is the important word — a runner has no memory of the previous run, so anything a job needs must be declared in the workflow or fetched by it. That is why the pipeline reinstalls Node every single time.</aside>
+  </section>
+
+  <!-- ============ SLIDE 6 · VOCABULARY: SECURITY & EVIDENCE ============ -->
+  <section class="slide">
+    <h1>Vocabulary 4 — identity, access and evidence</h1>
+    <table class="tbl">
+      <tr><th>Term</th><th>In plain terms</th><th>You will see it here</th></tr>
+      <tr><td><b>secret</b></td><td>a credential kept outside the repository, encrypted and masked in logs</td><td><i>Settings → Secrets</i></td></tr>
+      <tr><td><b>OIDC</b></td><td>a short-lived identity the platform vouches for — no stored password at all</td><td><code>id-token: write</code></td></tr>
+      <tr><td><b>least privilege</b></td><td>each job gets only the permission it needs, and no more</td><td><code>permissions:</code> per job</td></tr>
+      <tr><td><b>concurrency</b></td><td>only one run may publish at a time</td><td><code>group: pages</code></td></tr>
+      <tr><td><b>Pages</b></td><td>GitHub's static hosting for a published artifact</td><td><code>fontvu.github.io/cicd-lab</code></td></tr>
+      <tr><td><b>smoke test</b></td><td>a check after release that the live thing actually responds</td><td>the <code>smoke</code> job</td></tr>
+      <tr><td><b>audit trail</b></td><td>the record of what was proposed, approved, built and released</td><td>the run history and its logs</td></tr>
+      <tr><td><b>DORA metrics</b></td><td>four measures of delivery performance, tracked as trends</td><td>frequency, lead time, failure rate, restore time</td></tr>
+    </table>
+    <aside class="notes">This slide is the one an auditor will care about most: the run history is the audit trail. For each release you can show what was proposed, who reviewed it, which checks ran, what was built (commit ID), when it was released, and whether it was verified afterwards. That is a complete chain of custody for a change, and it is produced as a by-product of doing the work rather than assembled afterwards.</aside>
+  </section>
+
+  <!-- ============ SLIDE 7 · WHAT IS GITHUB ACTIONS ============ -->
+  <section class="slide">
+    <h1>What is GitHub Actions?</h1>
     <div class="cols">
       <div class="card">
-        <p><span class="badge a">SYNTAX</span> every shipped file parses (a missing brace is a build-stopper)</p>
-        <p><span class="badge a">WIRING</span> <code>index.html</code> still has the ids <code>app.js</code> expects</p>
+        <p><b>It is a CI/CD platform that runs on GitHub.</b></p>
+        <p>You describe the pipeline as a YAML file inside the repository. GitHub reads that file, starts a machine per job, and executes the steps. Nothing to install, nothing to maintain, no server of your own.</p>
+        <p>Free for public repositories. The YAML file is the entire interface.</p>
       </div>
       <div class="card">
-        <p><span class="badge g">CONSISTENCY</span> every <code>npm run X</code> in the workflow still exists in <code>package.json</code></p>
-        <p><span class="badge r">SECRETS</span> no credential-shaped string is committed</p>
+        <p><b>It is not:</b></p>
+        <p>• a testing tool (it can run them)<br>• a deployment tool (it can publish)<br>• where your code lives (that is the repository)<br>• software you install on a server (unless you choose self-hosted runners)</p>
       </div>
     </div>
-    <div class="mapping">50 checks, zero dependencies. ESLint is the same idea with 300 rules — the shape is identical: <b>a rule, a failure message, an exit code</b>.</div>
-    <aside class="notes">"Consistency" is the check people underestimate: rename an npm script locally, forget the workflow, and CI dies with a confusing "command not found" instead of a clear message. The secret scan is the other one worth automating — humans are bad at not committing .env files, machines are great at it.</aside>
+    <div class="mapping">It is <b>one of several</b>, and the choice is mostly about where your code already lives — not about capability.</div>
+    <aside class="notes">Answer the Jenkins question directly, because it is the one people actually ask. Jenkins is the long-standing default: self-hosted, plugin-based, configured through its own interface, and still very common in larger enterprises. GitHub Actions is usually chosen because the code is already on GitHub and the configuration travels with it. GitLab CI is the equivalent for GitLab; CircleCI, Azure Pipelines, Travis and Buildkite fill the same space. The concepts transfer directly — learn the model here and you can read any of them.</aside>
   </section>
 
-  <!-- ============ SLIDE 7 · TEST + MATRIX ============ -->
+  <!-- ============ SLIDE 8 · THE LANDSCAPE ============ -->
   <section class="slide">
-    <h1>Job 2 · Test — and the matrix</h1>
+    <h1>The same idea, different tools</h1>
     <table class="tbl">
-      <tr><th>Layer</th><th>What it means</th><th>Here</th></tr>
-      <tr><td><b>Unit</b></td><td>one function, no I/O, milliseconds</td><td>8 tests on <code>createCounter</code></td></tr>
-      <tr><td><b>Integration</b></td><td>your code + another real piece (here: the linter as a subprocess)</td><td>4 tests on <code>lint.js</code></td></tr>
-      <tr><td><b>E2E</b></td><td>a real browser clicking the real page</td><td>❌ not here</td></tr>
+      <tr><th>Tool</th><th>Where it runs</th><th>How it is configured</th><th>Typical fit</th></tr>
+      <tr><td><b>GitHub Actions</b></td><td>GitHub-hosted runners, or your own</td><td>A YAML file in the repository</td><td>Code already on GitHub</td></tr>
+      <tr><td><b>Jenkins</b></td><td>Servers you install and maintain</td><td>Jobs defined in its own web interface</td><td>Long-established estates, complex plugin needs</td></tr>
+      <tr><td><b>GitLab CI</b></td><td>GitLab-hosted or self-hosted</td><td>A YAML file in the repository</td><td>Code already on GitLab</td></tr>
+      <tr><td><b>Azure Pipelines</b></td><td>Microsoft-hosted or self-hosted</td><td>YAML in the repository</td><td>Microsoft-centred estates</td></tr>
+      <tr><td><b>CircleCI / Buildkite / Travis</b></td><td>Hosted or self-hosted</td><td>YAML in the repository</td><td>Hosted CI as a service</td></tr>
     </table>
-    <p class="mid"><span class="badge g">MATRIX</span> the test job runs <b>twice</b> — Node 20 and Node 22 — so one green check becomes two. <code>fail-fast: false</code> keeps both running so you see every broken runtime at once.</p>
-    <aside class="notes">A matrix is the cheapest insurance in CI: your code must pass on every runtime you claim to support. When the matrix fails, read WHICH leg failed — a matrix failure is often version-specific, not logic-specific. Also flag: a test that cannot fail is worse than no test, and a flaky test is a bug, not bad luck — a flaky red trains people to ignore red.</aside>
+    <div class="mapping">All of them implement the same model: <b>trigger → jobs → steps → artifact</b>. Learn the model here and you can read any of them.</div>
+    <aside class="notes">Keep this short and non-denominational — the message is that the platform choice is secondary and the model is transferable. If someone asks which one is best, the honest answer is that it follows the source control and the estate you already have; changing platforms is a project, not a decision.</aside>
   </section>
 
-  <!-- ============ SLIDE 8 · BUILD ============ -->
+  <!-- ============ SLIDE 9 · CI OR CD ============ -->
+  <section class="slide">
+    <h1>Is it CI or CD? Where is the line?</h1>
+    <table class="tbl">
+      <tr><th></th><th>CI — Continuous Integration</th><th>CD — Continuous Delivery / Deployment</th></tr>
+      <tr><td><b>Question it answers</b></td><td>is this change safe to merge?</td><td>how does a verified change reach users?</td></tr>
+      <tr><td><b>When it runs</b></td><td>on every PR and push</td><td>after merge, on the release branch</td></tr>
+      <tr><td><b>In our lab</b></td><td><code>lint</code> + <code>test</code></td><td><code>build</code> → <code>deploy</code> → <code>smoke</code></td></tr>
+      <tr><td><b>Enforced by</b></td><td>required status checks on a protected branch</td><td>the gate + environment protection rules</td></tr>
+    </table>
+    <div class="mapping">Both halves live in <b>one workflow file</b>. Which half you are in is decided by the trigger and the gate — not by the product you chose.</div>
+    <aside class="notes">The confusion is understandable: the product is called "Actions" and covers both halves. The precise wording also matters for an audit conversation: continuous deployment releases without human involvement, continuous delivery means the change is continuously ready and a person approves the release. Ours is continuous deployment until a required reviewer is added to the production environment — and that single setting change is the whole difference.</aside>
+  </section>
+
+  <!-- ============ SLIDE 10 · THE PIPELINE, AS IT ACTUALLY RUNS ============ -->
+  <section class="slide">
+    <h1>The pipeline, as it actually ran</h1>
+    <img class="shot wide" alt="GitHub Actions workflow graph of a successful run: a Matrix test node with 2 jobs completed and a lint node, both feeding build, then deploy with the live URL, then smoke." src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAQAAAE2CAIAAAB5j9e5AAA7SElEQVR42u3dZ3wU1R7G8bN9syW9hxJ6Db2HEkSK9F5EQRQREC7X3tGLBZQmFkQFC1a6CohYAEGlCEjvICWVlE2yvd8Xi2tMAkJICCS/74cXZHbK7pn/zM4zc2ZH4vV6BQAAAIDKR0oTAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAALcMuRCC544BAAAAlYFEIvlHGDhxNtXudJEHAAAAgAqfBFQKeZBOExEaKJVKhRCS7DyTWqkoFBEAAAAAVDBer9fmcOYZzU6nq2pMWIBKJbHYHLQLAAAAUHkY8k0ms7V2tWjCAAAAAFDppGcZApRKfk0IAAAAqHSC9Np8s4UwAAAAAFQ6aqXC7nQRBgAAAIBKRyKReL1ewgAAAABQSREGAAAAAMIAAAAAAMIAAAAAAMIAAAAAAMIAAAAAAMIAAAAAgAoeBryVslG81AUAAAAIA5JK2SgS6gIAAACEAQAAAACEAQAAAACEAQAAAACEAQAAAACEAQAAAACEAQAAAACEAQAAAACEAQAAAACEAQAAAACEAQAAAACEAQAAAAC3bBh4ZeariZ267tm793pmMm/+6w0aNXln0btl97EPHTrcoFGTgUOGUQEAAAAgDJSOlJSUnJzsvLx8WhYAAAC4yclLd3ZvLJifl5cbGhp2XXORSFgxAAAAQFkr+ZWBTZs2j75rbKvW7dq0Txw56q69f/whhHhw6rTETl1/+mlzsZO43e4lH3zYt9/Aps1bdezc9YFJDxoMOUKIvNy8x554slWb9m3aJz7/wozLLXHmq681aNRk+vP/8w/Z8N3GBo2aDBg8VAgxcfKU1m07nD17bvz9E5u1aN2hY9LMV1+z2+3zX3+jS1K3Vq3b3T1m3IkTJ1nlAAAAwHWFgXXrvn1w6rQ/9u2rU6dOnVq1j584cTVXA/4346U5c+enpaU1b9YsPCL81KlTQUHBQoip0x5at+5bmVzWpHHCzz9v/eKLZcVOPnTwYCHEDz/85HK7fUO+//4HIcSAfn19f5pMpjvvGpuent6qVav8/LylSz8dNGTY5198Wa9+fX2gfveePY88+hirHAAAAPApYTeh1994QwgxY8YLQwcPEkLY7XaVSnXlSZJTUlasXKVQKJYv/6JWzZq+qaRS6ZEjR3/fvVutVq9esTwuLtZssQwdOtxkMhWdQ506tRMSGh88eGjH9u0dO3a02Wxbt26TSqV9+/bxj1O7Vs0PP3hfJpO99fY7by985+zZc6tXLq9fv15OTnbSbT1OnT6TnZ0dFhbGigcAAABKcmUgNTUtJSVVExAweOAA35Bik8CkB6fee9/9vn+GXMPu3XuEEG3btvUlAf9Uhw4fFkK0b9c2Li5WCKHVaG677bbLLdqXPb7dsFEIsW3brxartV3bNpEREf4RevbsLpPJhBBNmzQWQtSsUaN+/XpCiNDQMN/8szKzWOsAAABACcOAwWAQQoSGhkqlV5p8185d23fs9P2z2x2+qSIjwguN5rsIEB7+9/CwsNDLzbN37zsCAtQ/btrkdDq///EHIUS/v/oI+fjnI5MrhBAhISH+l+RyuRDCyzoHAAAAfEfIJZhGq9X6IoHH47lCHtize2fRqTKzsguNptNqhRA5hhz/EKPRdLl56nS6Hrff/vXaddt++XXLz9sCAtTdb+/2j88j+8cnkvDDRAAAAMBllOTKQNWqVQKDAs0Wy5qvvvYNMZvNhlzDladKaNxYCLFjx47TZ874hqSlpXs8ngYNGgghtv+2Iz0jQwhht9t/2rSp4IQrV6/5Zt06/59Dhg4WQixd+qnJaLzttq6+jAEAAADgWpXkyoBMJhs/bty81xc8N/2FVavWSKXSY8ePvz5vdseOHa8wVYMG9RMTE3/99dfhw0c1adLEaDIeP3Z89+87EhIaN2vadN/+/YMHD2/SNOHUqVNWq90/1fFjx5977nkhRJOEJvHVqwkhWrdqVb1a1Z27dokCvyMEAAAA4FqV8KdF77//vhemP1urVs1Dhw8fOXqkSULj6vHx/zrVmwvmj7tnbGBQ4O+7dyenpNzRu5evH//Ctxf06tnDbrf9sW/f7d26vfnGPP8k0dHRVeLiatWsGVHgZoPBgwcJIUJDw9p36MAqBAAAAEpGYrE5brk3vXjJh3PnzR9z911PPfk4qxAAAAAogZPnUqW33Js25Bo++OAjiUQybOgQViEAAABQYvJb6L3u+v33jz5aeujwEUOuYfiwobVr12L9AQAAACV2K10ZMBlN2375VSLE+PvGPffs06w8AAAA4HrckvcMAAAAALhOt+Q9AwAAAABKBWEAAAAAIAwAAAAAIAwAAAAAIAzcdNZu+OGzZWtYcwAAAEClCwMAAAAACAMAAAAASq6ETyBOy7j46Zerzyen6nWaIf37tGyeIISY+8a7LZsnbNr6W44hr0a1KhPuvVOv0x85duLDT5e9+NzjapXKP/mUR58bNbT/qq83eL3epE7tB/TpIYRYvnqtQqEY1K+Xb/5z31g05+XpOYa8JUu/SEnNkEhE187t+/fuIYSw2+3z33r/9NlzIcFB9941okZ8NVYkAAAAcCPCgNvjeXPRB3d07/rofx44ez55/tvvx8RExUZHCiE2bf3tkakTdFrtux9++sOmXwb3vyMoMLB+ndoK+T8WZLfbT54++9qLz+Tl57867+34alWaJjQsdlkbf9xSq0b1x6ZNtNnseflG38A9+w4+Om1ijepVv9+09cuV3zz16BRWJAAAAHCtStJN6Pz5ZJfL3alDW4lEUqN61eYJjXbv3ed7qXOHtkGBgTKZrFmTxhkXM4UQcbHR940dJZPJCs2kx22d5XJZWGhIYvs2+w4eudyyYqIjDhw++ue5C2q1Kioy3DewQf3aNapXFUK0at40/WImaxEAAAAogZJcGTDk5gcHBfr/DAkJNhrNvv8HBV4aLpfKXG73FWai02n+mkR/Pjml0Kte76X/JHXqoFAqF3/0eWCg/u5RQ33XH4ICg3yvymQSt8fDWgQAAABKoCRXBgKDdIbcXP+fOYbc0JBLR+cSqeQqZ5KXd6nPT3aOwRchpDKZ568j+3yj0T9mYttWL01/vFmTRu99+OmlNy2RsOYAAACAcggDNapXk8vkW7Zt93q9Z89d2HfwSMsWTS83cmpaxkefLXcXuUrw/U8/O51OQ27+tt92NW/SUAgRFRF2+s9zHo/H6/Vu+22nb7TzF1JsdrtEIqlerYrT4WSFAQAAAKWlJN2EZFLpfybft/SzlSu/Xh8SHDR+zIjI8LDLjWwym48cO+nxegvdNFAjvtoT02cKIbolJSY0aiCEaNe6xYHDx557cbZGo+nUofXxE6eFECdP//n6wiVCiMBA3djRw1hhAAAAQGmRWGyOG7/U+6c+/vqs57VaLSsAAAAAKBcnz6WW20PHvDQ/AAAAUK54AjEAAABQSZVPNyEAAAAA5as8uwkBAAAAKF+EAQAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAKCCh4HK+Zxgno4MAAAAwoCQVMpGkVAXAAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAIAwAAAAAuHHkJZvMZncY8k1ut0cqlXg8t3ojeCVSidfjVauU4SGB1AQAAAAIA5fldrszc/LCQwJDg3QVpiEcTldyenZOrik0WEdZAAAAoDIoSTehjJy8iIqVBIQQSoW8ZtUoi91usdkpCwAAAFQGJboy4HKHBFXM0+d6bYDVblcrlVc5vkQiJBIJZQQAAIBb0TVfGXC63RJphT38VSvlVqvD5XJJpZKr+edye6ghAAAAVJYwoJDJpBX4XLhXCMGZfgAAABAGKh+lQq5UyGkHAAAAEAYqJe4BAAAAAGHgOrVLTJr44H/8f3br2Wf0mHFXOe3+AwcfnPoQqwcAAAC4JcNAQID6zJk/LVarEOLYseOXG23f/gMzXppZaGDTJglzZ8/810W88+7i73/4qbRGAwAAAAgDpcPhdHZN6rJp0xYhxNr1G3p2v903/LuNPwwYPLzr7b3mL3jTYrXOeGnmho3f3zdhkhCie6++z0z/X68+A3bs3DVh0tT8fGPnrj1OnT598NDh23v2tVpto8eM2/X7Ht98jh0/sfSTz+YteHPOvAVut/vhR58YOGTEyNFjU1JS9x842HfAkEFDRz7y+FMFR2N9AwAAAH5leLOsx+3p3avHu+9/0LfPHT9v3fbs00/sP3BACJHUpVOvnt2tVlurdh0fmjZ1yKABp8/8Of3Zp4QQJ0+dfuShaS/PeH7Hzl1CiMBA/Uszpj/59HSr1frarJcCAtTPPfNUfPVqvvnXr1e3Zcvm/fv26dG92zdr11tttq9WLfti2Yq3Fi6qVrVqk4TGM154TiqVSqVS/2hX87a5YwAAAACVRBleGfB6vU2bNjlx8tSu3/fUrVNbpVL5hq9d9+2kKdOenf6CzWYrHE3k8kKH7J07dbTb7cHBQS2aN/MFALVaXXRZp8+cOXHy1P0Tp3y7YaPD6RwzZrRare5+R781X6+91rctk0mdLjeVAQAAgAqvzH9Gs0vnjk89O/2ZJx/3/Wm12p59fsa+3TucTqfvSF2lUpnN5kvRRCqVSv+RT75Zuz4yMsJoNP28dVuXzp2OHT8RX72aPw+oVCqzxSyEqFatWv26dd9+c74Qwu12ezye6c8+NXHC+G49+wwZNMA/2tUI1WuSL2ZrNWqKAwAAABVbmf+0aO87emZlZXXulOj7MyBA3blj4gOTp742d371alWFEO3btd2994+hI0YXnTbj4sXZc19/+cUXXp350vQXXsrNzZvx0swDBw/7R+hzR6+589+Y8dLMAf37anXaXn0HDho6ctXqrz77YtmgoSMfmDz1rtEjC472r+/W6/UGBKiUCkVaZo7H46U+AAAAUIFJLDbHNU3g9ngysgy1qkZXyOYwmq1qlUIhl1/IyDGaLcIjhORKkUAhl8vlMsqoHLOsXCHXqtUqlYLWAAAAuCYnz6WWpJuQQiHPM1kqZIvYHU6X2xMSKK8aFSpE6JVH9grhdnN3QXlyezxGszXXaJZZpeHBgTQIAADANSlJGPC4PUE6DW0nEUIu47JAuZavTKYKVgRqXGmZBpvdrv7rJnUAAABcDSlNgFudUilXB6hsTq7SAAAAEAZQ+eg1KqfTRTsAAAAQBlDpyGUyr8dDOwAAABAGAAAAABAGAAAAABAGAAAAABAGAAAAABAGAAAAAMIAAAAAgEpFThMApcjtcZtMNrvL6fXSGLg2EolQK5WBN9Pz3V1uj9Fsdrrc1DOulVQqUSoUQTdTPTucLrPV5nC6haCgcc31rFYq9doAwgCAKzFbbLlGc1iwPiRYJ6E5cI28Xq/JYkvJyAoLDlSrlOX+fvLNVqPJEhEaqFYqJBIqGtdcz/lma0pGVkRosFJR/gcbeUaz2WqLCAlSBytYO7hWHo83z2RJyciOCg+Wy2SEAQDFcLrcuUZzrapRHDahxFRKhV4bcD4tMy4qvHzfic3uMFustatFs1JQYhFKhU6jTk7PrhJdzvVssdntDletqtQzSk6tCtJp1GlZhrjIsAr20bhnACgd+SZzVFgQSQDXSamQhwTq8k2Wcq5nsyU6PJjVgesUoFIG6gJMFls517PREhNBPeN6aQNUAWqVxWYnDAAohs3uqKi9CXGD6TRqm8NRvu/B4XBp1CrWBUqnnu3lXM9uj+dm6KqECkCvUTvKe/9MGACACk4ikZT7Dbtc4kKpHWdIpOV+wy53wKPU9o1CeL0Vbf9IGAAAAAAqa2KnCQAAAADCAAAAAADCAAAAAADCAAAAAADCAHCTkkgkbo/X4ym3H4zwuD3luHRUvHr2eMqzotweN/WMUjvOkErcHk85/p6Py+3xUs/A5ZX/z+5uP7tXCPHb2b0d4lu0j2/BKkEJKOSyAJUiI9sgkUhCgvSqG/h70na7MzvfKJVIrv4hA9Q8/rWe1SplelaOTCoLC9HLZbIbtmiLzW7IN8ulEr2Oesb18nq9EolEpVQoFfLUi9lyuSw8RC+T3rh6NltthjyTUiEP1Af438+/1rOvmIUQ1DMqCYnFdm2PTnB7PFk5efFxkaUSA+ZuWez7IvF7OGn8I0njWTEo8aFMWqYhWK/VBKhvwOKMZqvJYo2NCFGrlNQ8Sp3JYkvPyg0L0auVyhuwuHyTxWqzx0aGXuXjmahnXFuBma0Xs3PDQ4JUSsUNWJwh3+RyuWMiQhTyq4ofvmIuWM/t41s8kjSeSIBC3/tGsy0kSFdhPtHJc6myZ5597lqDvsVqDw7UXuey525Z/NBXLybnphX9dhFCdChu23O53QsXvTdl2sOvL3jr6LHj3W5LkssvfWNlZmbd1v2OcWPvlkqL6fj0yONPHT16rF3bNuXV0IldujVq2KBKlbiiLx08dNiQYwgPD//XmTRv1b5D+3ZRUZFsikUlp6SZLBa9TqeQy4P0mtSsXG2ASiop215wDqc7N99Yq2q0XC4TQiSnphuNpkC9rhRr/srFU9CMl2eeOHmqZYvmxVY7xVOO8vKNb7778e4/DjgdrupV465mknMXUmw2u06nVSrkeq06NdOg1wZIyvgxYFa7w2Sx1oiLlMmkQojzyalmi1Wv05ZuPfsdP3Gyc1L3Byc/cJVvr9x345VWSmr69Ffm1aheNTwsJCUt472Pvtj++x+/7tjdokkjxdWFxrPnk51Op1ajUSkVmgB1WpYhUKcp8xNDVpvd4awWEy6TSn3blN3h0Gk1V6jneVsWF6rn5Ny05fvWX009l8zKVWv+99LMYUMGUWbl4sTpP5d8svz3Pw5s/W1X08YNlFd3zsXhdDmcrgC1ssK0Q06esdy6Cc3bsvgKLxV/udnrNRpNyz5bGhYWNmL0mGUrVo25607fK2FhoQvfet2fDYpzkz4u7uNPPkvs0K5+/XpsliWTmp7xzuJPT589L4Ro3LDe1Alj9DpdVGiQIc8cHhJYpovOzTdGh4cIITKzst9e/MmJU38KIRrUqz3l/jEhwUGlU/O+2r2Ko8Cxd48OUAdQDzeht99fOmJIv1rx1a5m5NN/nnv3w8+TU9OFEC2bJfx30jiFXB4eHGjIN4eW8YkoQ74pLiLUd9i06IPPzl1IEUI0bdzgPxPvCVCrS7GecQtxOJxfrl7XsF4d35/BQfqJ4+7U6bTrv9/826493bokXnnyQ0dPLF765cXMbCFEYtuWD94/Rq1UhOh1eUZzkF5bxvVsrh4bIYQ4fvLMex99npaRKYRo27LZtEnjio68/ezeK9czF7sqpCox0Q89eJ9CLv9h8y+/7tzTs1vnStsU5XMD8dzLbHUP/7W9FTuCXC5/6olHa9SIDwzU14yPt1qtfx8RpqYNGX4pGHz19drOXXs0TGjx4NSH8vONvoGnTp3u039ws1btZr02RwiRmZk14s4xzVu1b5eY9N3GHwou5YtlK9p36togoflTz0wXQhw6fGTAkBENE1oMGDLi+ImTvig/acq0sfdOaNqy7ZRpD3/73cZOSd2bt2q/avVXvlfvf+DBu++5r1HTVuMnTDaZTAVnvv/AwV59B7Zu3+nue+67eDFz2YpVX3+z7oUZL7dLTCr6qhAiOTllyPA7m7Vq99iTz8jkMjbdopZ8styXBIQQh44c/+jzVUKIQG2A3e4o60U7XW5tgMr3HnxJQAhx9PipDz9b+Vd69V5nzfusXb+hc9ce7RKT1m/4Tghx/MTJug2b+l769ruN/QYOFUK88dY7n3+57B/ntCiem0C+0ej2eAomgY8+Wznv7cVz33o/LeNi0fEXL13mSwJCiD37Dn78xWohREig1mKzlen79Hi8wivUKoUQYskny3xJQAix/9DRj79YVVr7cCHEL79u9xXzF18u/2vRnv+9+Eqrdh0Tu3T7/MvlvtJt37HrS6+82qhJyzv6DfLteP8+iZWT88DkqY2bte6U1P3b7zYacnPrNGhy/sIFIYTRaKzToElubh6FV1qUSsUjU8ZrNZdONGg1Gp1OK4Sw2Wx6nc5itc558/3X3/lgwaIPPR5P0cnf/fBzXxIQQvy6c8+yNet89Wy0lG09u9wehVzm6x3kTwJCiJ179n2ybE1p1bPH43niqWdbtO7Qok3iq3PmCSESu3R7593F7RKTOibdvvH7HydNmZbQvM3wUXf5jgQKlW7BWf24aXP7Tl1TUlKLbg4oOxpNgEIu93q95y6kREWG/2s9V2Dlc2WgUB9Tn5X3LPztr+HFjuCXnpGxfcfO/06bUvSlP8+ee/rZ57/8fGmd2rWnPfzorNlzX3nxBSHEqTNnVn75qdFo6t1vUJfOnU6cPKVUKvb+/lteXr5X/H3EduLkqef/99IXn36U0LhRjsHgdrsnT/nv/ePHjRoxbPEHH0+aMm3T998KIX74cdO6r1fFREff1qO30Wj66fv1a9dvmD1n/pDBA4UQP2/7Ze1XK6tWrXL32PveX/LhQ9Om+nccD/7nodmzXm7fru3LM1+bO3/BqzNfWrFy9eg7Rwwa0L/YV1+e9Vr1alWXfb70hx83rVi5mk23EKPJdPT4qYJD9uw7dCnmyqRnzqeJsulZ4fV6JULotAFCCIfDceDwsX++h4O+29QKntG/XM0LIeb9W807HI7NP27Yuu3XKdMe7tKp41W+SYrnZpCZbdAEqJd+uTo3L79zhzZNGzc4furMM488qCuu+01aRqb/KNznjwOHhRgmhPAK75kL6WX6VoP0GiFEdo7h1Jlz/3gP+4+U1j7c5XY//NgT//3PlOHDhrwy6zXfwFWrvzp1+vT2bZsNhtzbe/XxVXhaenrt2rUO/LHrlVmzn3t+xvIvPilQ2LPVavWenb/sP3BozLjxP21cn9Sl8/r1302aeP9Pm7bUqlkjuLjrcihFOYbcQ0dPDOjd40JKqlwumzphrKy4e9xPnj6bnWMoOGTfgSMjBvWVyaRut7tM69nrFeEheiHEuQsp/iTw13s4fPeIq+qWU7Cei704cO78hfUbNv6+fZtMJs3KupR5Tp48+cvPP777/pIHJk/98rOP5895tf+gYeu+/W7k8KGFSrdpQoIQQiKR7Nt/4Klnpi/94P24uNgVK1cX3Bx69+pJPZepH7f8umnrbyHBQQ3r1UlJS79CPRMGyjAMPJw03ne/jm+rK3idbvvZvcVeZbZYrQ9Mmjr+vnvq1K5V9NXff9/duHGjJgmNhRCjRgx/7oUZvuFJnTvqdDqdTteuXZt9+w706tn9rYWLJj74nwnj723ZonnByZs1TfANiY6KOn/hQnJKyqiRw+Uy2di7R896bU5KSqoQomGD+vXr1RVC1KpZo1fP7kqlskXzZllZWb6ZNGhQv17dOkKIfn17b9r88987jnPnk5NTnpn+PyGE0+GsUSP+H7uV4l7944/98+bMksvld/TqodPp2G4LKdp7wd8l1O3x6kq7W6rd4XC5PS6X2x8JhBBKpVKhkDudrr9PNgSoi3bsKbbmhRBDP5r8rzXfu1cPmUzWNamzUqE4eeq0RnNVn4viuUnY7Y67hg90ezzTX57XLKHhvXcNf/ejL0KCA0cPG6j6533nRW9D1/x1RlZ4vDptGXYD83i8vnpWq1SFXvKfFb7+fXhWVlZWVvbwYUPkMtmQQQO//HKFEGLbr78dPny0Z58Bvq3p3Pnz1apWFUIM7N9XJpMNGzr408+/LHiR7bftO+bNnqVSqdq0blmvbp0dO3cNHtj/rYWLJk28f+MPP/bv14eSK1MWq/WdJZ89cM+dcrmsRvWqLZslzJq/qHmThr17dC00plpduJY0AQEF9tVlWM9uz6WfMi3mPRS3/7yaei6qapW4OrVrDRs5euID4+/o2cM3sG+f3nK5vEXzZlGRkb5bXBo0qO87PChaukIIo9E4/oHJTzz6cIMG9YtuDgaDgTBQpm5PSrw9KXHrrztXfLV+9PCBV6hnwkDpax/fwr/trbxnoe+XvAptdcUeFTmdzgcmTW3RvNnkiROKnbPL5SpwbsCrUCj8X3V//ccjJJIaNeK3bvph1eo1EyZNffKxh4cNHex7VSaXF7y7wFXgCM93AcE3w4C/9mgSicS3r5FIJP4vK+9fV5c8Hk/Bg0Lfn+u+XlVwh3jlV71er/+WaIVcznZbuHzl8u5dO/2weZt/SLcuHYQQHq9X4hWRoaW2D83JM2bnGoUQGrUqSKcJDdILIVIuXjoV1KNrp/Xfb/aP3L1rp6up+UJJQFz+Z+z+rl6vp9AFB6vFevlzYxRP+asSGy2TySQSieyvdVGnVvwjU8av3fDj9t/3JnVsV3DkkOCgju1a/bJj99/13LmDEMLpcsvkilKs52KlZuQIIbRaTddO7Tdv2+4ffluXDqW1D790xeyvjde/6xs2dPBTTzzqHy05OcW3Fft3pwVrvuhOvtttSU8+89yJk6e2bv3l6Scfo+rKjsPhfOu9pSOH9ouOivAN6dS+dcd2rWa/8V6r5k0iI8L+cawcF9OiaeO9+w/5h3Tt3F4IYbM71Uplmdaz1yvSMrOFEFER4W1bNtu5Z9/f9dy5/ZWnvVw9F/sFtHrFFz9t3jJv/hubt2yd+9pMf4CXSCTqv85VSSQSX5otWroOh+PsufO9enb/+JPPBg7op1Aoim4OKNPQ6NszBwbqrafPXrmeK7ZyfujYvC2L525ZfJVJwO12T5n2cHhY2KMPTzNbLLbiOtG2b9/u0KHDR44eczgcy1euSuxwabPfvOXnvLz8C8nJ23fsbN6sSXJyild47xo9atSIYXv2/uGfvHmzpgcOHjp46LDL7T5z5s/4+OqxsTHLlq1wu92ff7Gsdq1akZER//qhjhw9dvToMYvVunbdt82bNfUPj4+vHhMT/e57iz0ej8lkOnPmTyFEQID67NlzXq+32FebNk1Y89U3Lrd72y+/GnJz2XSLGjd66OB+PeNio6tXjRs9fMCgvj2FENkGo05baj8t6ksCYcH6sGB9XFSYLwkIIQJUypw8kxBi9PCBwwb2qRoXU61K7Kgh/YcP6lPswVPBmi+aBK5g3fpvXS7Xxu9/dLnctWvVDA8Pczqdf5495/V6f9y0+XJTUTw3A5VS2Tmx7auvL3ptwbt9e97mdrtffX3RG+9+dOzkmcYN6hYdf/L4u/v16hYbE1Uzvtq9dw3rcVsnIUR2rlGvKfOfylUq5blGixDi/rEjB/TpHhcTVaN61TGjBvfteVtp7cMjIiKCg4PXfPWNx+NZu+5b38COiR2+/mZdcnKK1+s9eOiw/yLAmjVfu9zuFavWFNyLCiE6d0xcvmK10+n8Y9/+U6dOt2rZQqlU9rmj1+w58+vWrVO1ShWqrux8/e0P55NTPl/x9Yuz3/x0+Vdnzp6f/cZ7b733sVarCQsNLjr+Q5Pv7dmtc3RURO2a8RPvHd2xXatL9awt23qWSIRcJjNarEKIaZPG3dE9KSYqolaN6vePHdm1UzFhwH9vwDXVs8lkupiZefttXZ9+8vE9e/b+67sqWrpCiMaNGs6e9bJWq50zb8EVNgeUhZ9+/nX2G+/Ne3vx95u2DezT/V/ruQIrn/OFjySN9x8JFRu+i93wdu76feP3Pwoh1nz9jRCibp3a329YW2icGvHVX5zx/H0TJlkslk6JiY89/F/f8KQunYeNHH0xM3P0qBHt2rZZ9+2GGS/NlEqkkZERc2fP8k9er26dZ596fMKkKQZD7rAhg1783/R33lrwxFPPvjJrdr16dd9+c/7VfLoG9eu98urs/QcOtm3T5v777vEPl8lk7y5885nnXli85CONVvP0k4/VrFlj3Ngxjz7x9JfLVv68aWPRV5956vFpDz3Wqm3iHT17NGrYgE23WEMH9B46oLf/z3yzNd9sjY0Mvf45W2z2lIxsIURYsN6fAfxCg/TJ6dkqpVwboB7Ut8egvj2uXPP+Up+3ZfG8y38bFc7rEmmNGvGdkrp7vd7XZr3k6/AzberkkXeOiYgI75jY3ncatSiK5ybRvnXz9q3/7ov4xH8nXnn8UUP7jxra3/9nrtFstTt8v1tVpsKC9amZ2SqlPEClHDGo74hBfUt9Hy6Xyea+9sqzz8+YM2/B2DF3SWUyIcTwoYP//PNs/0HDnC5XzZo11qz4QgihUCiOHT/Rum3H2NiY1+fN/kdhP/3EY0883axlu4iI8LmzZ8XGxgghBg8aMGzkXdOffYp6Kwujhw/0/WfYwN7DBvYu+NJj/5lwhQllMtnYUUP+eW7F5HK7NQH6sn7PocGBGVk5qhiFUiG/e8SgK98n0CG+xbwC+bbYgi86MDc3b/SYe602q1ajefyxh//1LRVbukIIqVQ6f86rvfsP6tK5Y6HN4auVX1J+ZadH1049ClzJDw8LvXI9V2Dl9tAx32/6FvtSCZ5Zk5yc0jHp9rOnjpZ7g65ctWbl6q++/OxjNrMbz+ly5+QZTRZ7dHiIVHq9tw77uwbFRYVpinQ89XG53emZhiC9JjRI96+PiS3dmkeF53C6snONVrsjJiL0xizR7nRdzMkN1etCgrSyAs9sKfa5rWVXzyXYn+fnG1u0br/9ly0REeFUzs3J7nBm5RpdLndkWPANW2KmIS80SBcSqJP+249JsH/GVaqQDx0rt57Evk2r6LZXgq3O4/GkpKbq9fqbpFm5rlcebS5OnEuTyyV6jaZUrgn4koBGrYqLulKvQblMViU6PM9kOZua5fG461aPvTE1jwpfzyfPp8plMr1WExN4475yVAp51ajwPJPlbEqmy+2qF3/pEWnFPunipqrnd99f0rVrEkngZq1n78nzaXK5LEir0QTduG9qlVJRJSrckG86cyHD7fHUi2f/DFzmYKYcl/1I0vhHksb7+k9vP7vXt72V4Dk1L73y6rIVq6Y+OInVWWk5XS61Ul5aJ5wsNvvVJAG/IJ0mSKdJyci6YTWPCl/PSoUi6kadQL2l69lkMnXofFv1atXeXfgmlXNzstmdASpleEj5/CpOSKAuJFCXnJ59NfXse9Lw3C2LfWVMDEAlUW7dhIBS5HC60jINpRIGfPcJXH0S8EvJyKpdLYZ1gVKp59RMQ3mFAeoZpctqc2Tl5pdXGPBJTs+uUz2adYHrVyG7CUlZr0BBhjyTEKIibecAAACXQxgA/max2S02e1iw/nJ3DAMAABAGgIrJkGfSqFWhQXqaAgAAEAaASsR3WYAOQgAAgDAAVDq+ywJ0EAIAAIQBoNKx2OzXtS1JpW6Ph2bE9XO5PQWf+QXgOkkkPP8HpcPt8Vz/U00JA8DNmwSup49QgEqZm2+mJXH9DPmmALWSdgBKi1KhyDdbaQdcv9x8c0CAmjAAVEA2u0MIcT19hIIDdYZ8s5HvG1xvEjA7nW5thfuyAcpRaJDuYnaebz8PlFhGdp5MJlPKZRXsc5XPE4itVtuST5ZbbTarzTZ62ACXy7191957Rg8tlZm/MvftqQ/ck5qWUXCeG3/aGhMd2aRR/WJH1uu0lHglZ7U5rv9ugZiIkMyc/OxcU4BaKRESWhXXxCs8JotNKZdHhQff5G91+2nr8t2m+SMiSmVuHq/oPi/5p0eqCCHGLEl/cWCYxeF9aNnFmuGKhXdFlW2be8WwRakrJ8X6h/x22rri3z5a21fO73y62r/OqiDf56oepvAPeWdLbp0o5e0NNMWOP2tDTqNYZb+muiu/qz4LUpbeFx2m+8ehyftb82pGKLpdZs6Vk0wmCw8NSrloUMjlKqWc/TNKsH82mm0BalV4SGDF+3TlEwZ+27UnvnqVvj1vE0J4vd4Tp/4s6yX27Nb5ci+xS0BpkUqlUeHBTpfb6XJ5uX8A10gikUWFh9yidwtsPm45l+W8JzHIZPc8sTLr7dHX8JT6bSetHWsHCCHMDk+O2V09TPHqdzkPdAke1Fx39cstaZsL3+H7Nc1HcsVZFeX/XAUHTkoKLqWyKTxk7X7Tlw/EskEVolLIYyND7U6X2+XyermFANe4oUnlMRGhFe9ugfIMAxHhYes3buqS2Fav00okEiFEanrGO0s+zcoxtG/d4vakxLx84wefLne7PV6v9/6xIxcs+vCx/0yQSWUTH3rmpecejYuJeubF2S8/95hvbnv2Hdq2fZfNZm/WpGGvbl2KXeKadRtjY6LatGj64WcrDLl5Vpt9+MDedWvXFEKsWvtdXr7R6XQ9eP/dHo9n4eJP5XKZRCKZOmGslHv4cO0Ucpmiwl1DBAo5ke4Y/3H6hRzXsFb6UW31czcaLA5PSq7b7vJsOW6ZsDTjzTsju89LbhyrTMl1NYhRzRoSvnR7/uq9JrVCMqK1vk+CtvmMc4dnxAshlv9unJQUJIRYt9/cO0F7IsOxbr85UG2VSkRMkPylddkymSQuWP7GqMgdZ6xv/pSrkkuSDa472+pHtPl7uRsPm9dNjQsMkL6/Nc/h9i7/3bjxoSpqheT1Hw1xwfJhrS49PCQl1zXxk4ygAGlMkFwIMXtYRNtXzm96tIp/Pl3rBxT8aOM7BXV57UKhWVkcnsmfXbyY76oTpZw5ONzfJr4rBrv+tBV8z1LJpc/liz0z1mZrlJJxiUHH0h31opWDmusWbs79ep9JKZcsGBn5Z5bz1Q05VUPlF43uRrHF3Dey/oD5s535JpunV2Pt5K7BQoiX1+dcNLrsTu8H46J1KmlqrkunlmqUnOa6bCQQCjntAJR/GGjSqH5OTu6MVxe0aJYwYlAfIYTb45l0310ul/v5mfNvT0r8ev0PXTu1b5bQcN/BI6vXbmxUv+7xk2dcLlfThAZ79x+SSiRxMdH+ubVo2qhls8Zut/v5ma9fLgz47P7jYIBafe+U4UaTedb8d15+7lEhRNtWzerXqfX95m1bftlRr3ZNuVw2dcJYmYyDOQC4LJfHu3hstMPl7TrnwvhOQQOb6+RScU9i0PF0R7LB9d6YKCHEqYuO7/5bRaOUDFuUeijF/s0+0wv9w5pVvdQf7+spcUIIp9t7IsPROE4lhFi91/TGqMioQNntDTRtaqjvSNAmzb6wZnJsiFb27JqsNXtNMcGyHLN740NVHC5v0uwL93b8e7k6lWTNH6axHQJX7zV+Mj5m+e/GYt/2nI2Gad1Cbm+oWbwt73j6pR7kWqXUP5/fTlsLfbSiM8k0uucMi9AoJaPfTzuUYve9eb/HV2YWfM9DWup8n0sI8cTKzG+mxoXrZEKIWRtyhBAZ+e7lu42bH63qO8F/1+K0Df+tEhQgvXtJWrHvv3eCtk8TrdPt7Ton2RcGBrfQJdYOePfn3KW/5U/uGrxyj3FoSx6bCOAalNuZ76RO7V7935M2m+2nn38TQvgO7uV/nU9NTc+oXjVOCFGjetX0i5kJDesdOXZyz/7Dwwf1OXz0xOFjJxMK9P7fuXvf4qXLPlvxtdPpvPJC0zIuVqsaJ4TQ67Qul8s3MDoyQggRFxOVmZVTo3rVls0SZs1f9O33mykOALic+jFKIYRSfqUz0DFBct8p6saxqrPZrgWjIt/bmjd8Ueqpi04hRO1IhRDip6OW2+prhBB5Vo/d5Y0K/MeJGJPdE6KVCSGaVVOdynQUXG6h7jEj2wSu2mu8kOPSq6XhBfrQF+oPcjrT0ShOKYRoGKu81o/mn1Vs8KXPVT9GeTbbVWi0Qu+54Oeyu7zh/+zf/2eWs1Gsyv9ZnG4RFCAVQjSMUQkhfjxi6f9Wyn+/vOgff/Ve05TPLz69OsvmvNQRsVaEQghRL1p5NtsphNhw0HxHAnfBAbjpw4Db7RZCSKXS2jXjLVarEEL6z/16dGTEuQspQog/z12Ii4mqXSv+fHJqfr4xNjpKpVLtO3gkoWG9S7tOl2vV2u/uu3v4yMH9/rUXYFRkuG+2JrNFpbr0TZCaliGEuJCSFhkeJoTo1L71049MPnT0xMXMbOoDAIr/8vjnTlsmFWaHVwghk0rM9ku74pRcl8nuEULsPW+rES6PC5YvHB35WK/QWRuyfcfBQogVu42+Pjxr/jANbFb4KFatkOaY3UKIfeft9aOVV1huVKBMKZO8+3Pu6HaBQgitSupb9OlMp/+wWwhRI1xxLN0hhDiT6Sx2PkUXUXRW/s91ONVRI1yeY3bn2zyXe88FP5dcJvG95FctVH4kze7/7lLIhNHmEUKczXIKIW5vqPlmStzrIy/dgGF3eV/5NvvNUZEzBob7Jzme4RRCHEl11AhXnMl0xgTLAxT0EQJwDcqnm9CWX3b8umOPSqVUKOQTx42+kFL4euigfj3f++iLzdu2CyHuvWu4TCpVKpXx1eKEEE0b1/9h8y/BQZfu5lbI5VViopd8skyr0YSGBF95uW1aND14+NicN993uVxjRg4WQgQEqPceOPzDll9cLveD99995uz5Vd98p1YptVpNWGgw9QEAV6NLXc2YD9Iz8l3T+4VZHJ67FqctujsqSi9/dHlmaq6rUZyqUazqsRWZKbkum9M7sUuQw+Xt+0bKnueqp+a6fJcIvvrD9NG46EKznT00/K7F6YEB0ki9rH9T3fYz1sstd8aA8JFt9I+vzJreL0wIcX/noAlLM2pFKLJNbiGEb3GHZ8Q/0iN0ymcZn27Pl0okIVpp0fn0alw4kBSalRCiUazq4WWZ2WZ33Shlo1jVq9/lhGpk93cOKvY9D1qY6v9cMweHj1mSrpBLRrW51JMnNlg+oJluwNspEiFmDYn434Dwoe+kVg9T2F3FnNtSySX1o5VTPr8YopHGBcuFEPoA6YaD5ve35jpc3g/GRb+1KXcYfYQAXCOJxXZtP7vr9niycvLi4yJvrc+54qtva1Sv2qp5Aqu8QnI4XWmZhsiwkue3lIxsIURcVBiNCQghUjKyaleLuc6ZtHvl/I4iP8F5s3wp7Daez3E90iOEdV3WrDZHVm5+eEgQTQHchE6eS60U99Sv+mbD/kNHu3ftyCoHgBvmJvz5xk3HLIu25MplEovDu3hsFOsIACrLlQFUbFwZAEpXqVwZAARXBoCb28lzqfyOPgAAAFBJEQYAAAAAwgAAAAAAwgAAAAAAwgAAAAAAwgAAAAAAwgAAAAAAwgAAoKKRSKRut4d2wPWzO51ymYx2AAgDAIBbhk6jzjTk0w64flkGo1YTQDsAhAEAwC0jUKex2R2ZuUaaAiXmdnvOp2VrA1QKOVcGgJuXnCYAABQVFR6SazSdOp8mlXLaCNfM4xFCeIL0Op1GTWsAhAEAwK0nWK8L1uu8Xi9NgWslkUhoBIAwAADgqA4AcPPi4i8AAABAGAAAAABAGLgCj9fLzWS42bjcbhoBAACgzMOAEF5uJsPNxu32SKR0awYAACjjMKCQySVSaXYePz6Nm0i+ySqVcMEKAACgjMOAECJArTRb7IZ8E82Hm0F6Vq4Q3pBALU0BAABwTUry06K6ALVCJjeazUazTSKRcAsByo3H4/J45DJZcKCOOgQAALgRYUAIoVLKVcogs83udXt5zDjKLwt4lCqFjBgAAABwI8OAj1atogUBAACAWxSnVAEAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAADCAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAEAYAAAAAFCa5GW9AIfT5XC4aGhcK4lUolIq5DLyKgAAwC0YBhxOV5YhT6lQBKiVwuulrXFNPB5vZk6uXCaLCA26AYuz2OxhwXqaHQAAEAZK7UguNjJUo1bRyiiZyNDAnDzTxZzcyNBgWgMAAKDUlVUfDEO+KTwkkCSA6xQapJNKpFabvUyXYrHZhRBqlZIGBwAAhIFSYLM7gvVa2hfXL1ivsdqdZboIQ55JCEF2BQAAhIHSwk0CKB1ymczjcZfpIiw2O0kAAAAQBoBKx9dHKCRIR1MAAADCAFC5GPJMGrWKKwMAAIAwAFQuOXlGi83OZQEAAEAYACoXi82enWvksgAAACAMAJUuCaRkZGvUqrioMFoDAAAQBoBKxPdzonQQAgAAhAHg5qVWKS02R+rFbJPZVlrzTMnIttjscVFhdBACAACVmbx8Fz93y+LtZ/duP7vX9+fDSeMfSRrPWkFBEomoFx/rdLmyDMb0LEN0eMj1zM3XO0gIERasJwkAAIBKrtyuDGw/u3foR5PnbVnsTwJCiHlbFse90K7gkEISu3TbsXOXEKL/oGH79h+43GgrVq5m1d6cTpw6M3PewgXvfPjnueRrmlAhl8dEhATrNRlZuSVeek6e0X+fQGiQntUBAAAquXK7MjD3nzGgoKEfTU55YceVJ39pxvP16tYp9qXk5JS333l32NDBrN2bjc1m/+DTFc8+NlWn1VzV+Hb7p8u+2nfwiF6nvT0psVuXxJBAndXmMFtt2gD1tcaA7FyjECIsWE8MAAAA8CmfKwOXSwLt41v488CV5zBpyrQ/9u1PTk7p3LXHrNfmtGjdoXPXHrt+32O32++9f+KF5JR2iUkff/IZK/imsv/Q0ZbNEvxJwGK1znnz/dff+WDBog89Hk/R8V9f+MGmrb/lGHLPXUhZ8snyn3/dKYQIDdYbzdZrigEpGdkkAQAAgKLK58pAsUnAd8NA3AvtLjdCsc5fuBAVFbV75y9z5i148+2Fn3y0ZPqzTz/z3As/b9rI2r3ZZGZlmy2WJZ8st9lsQ/rfYbXZ5HLZ1AljZTJZMWs2OfXA4WMFh/z8y84uiW3VSoXN4fD1+78yi83u+49GrSIGAAAAFFU+Vwb8x/r+SwG+JPCvFwSKNXzoYKlU2qZ1y4sXM1mjNzm9Tnvf3cMH9ev5xapvalSv2rJZwqz5i779fnPRMR0OR6EhNvulg3vhFRab/Qr/fGOFBevDgvV1qsdyhwAAAECxyufKQPv4Fr484PvtoN/O7vUlgau/IFCQVqsVQkgkEq/Xyxq9mdWuGe872S+TyTwerxCiU/vWHdu1mv3Ge62aN4mMCCs0clREeEZmln9Ii6aNhRAut1uhUMTHRdGeAAAA16mcnzPguxRwPUmgqIAAdVZWlslkKrYbOspR/bq1PB7P7Dfe+/DTFUMH3HHm7PnZb7z31nsfa7WasNDgouNPvHd0XGy07/9dEtsOHXCHEMKQb9Zr1DQmAADA9SufKwMFewQV2zXo4et42kCThMZt27Zum5j08H+n3jduLOv4pjJySL+Cfz72nwlXGLlenZqzZzyVln4xIEAdHBQohLDaHblGS5WoMFoSAADg+kksNkdZzDclI6t2tZgrjHCFSwHt41usvGch66Yy83q9Eomk0MA8k+Vidm5kWIhSIaeJAAAArtPJc6nl1k1o5T0Liz393z6+BQ8hRqEkkJyRfep8er7JGhsZRhIAAAAoLeV5XOU/6PdfIngkabz/94UAH7vD6XK74+gaBAAAUJHCQME8AFyOx+OVSaW0AwAAQKnjGAsAAAAgDAAAAAAgDAAAAAAgDAAAAAAgDAAAAAAgDPwrr5e2RenweD1CSGgHAACAWyYMKJVys9VO++L6Gc1WtVJJOwAAANwyYSBIp03PMtC+uE5Wm8Nosem0apoCAACg1JXVQ8dUSkWgVnvqfHpYsD5ApRSCbkO4Nh6v12i2Gc2WqLAQWgMAAOBWCgNCCJ1WHRCgNJmtRouVhsa1kgihUijjosJpCgAAgFsvDAghZFJpkF5LKwMAAAA3IX5aFAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAAIQBAAAAgDBAEwAAAACV0/8B5oliymm1058AAAAASUVORK5CYII=">
+    <p class="small">This is the workflow graph of a real run of this repository, captured from the Actions tab. Read it left to right: two checks run in parallel, then the pipeline continues in one direction.</p>
+    <aside class="notes">Point at the three things worth noticing in the picture. First, the leftmost box is labelled "Matrix: test — 2 jobs completed": that is one job definition executed twice, once per Node version. Second, lint runs in parallel with it, so neither waits for the other. Third, the deploy node carries the live URL it published — the graph is also the record of where the change went.</aside>
+  </section>
+
+  <!-- ============ SLIDE 11 · WHERE THE JOBS ARE ============ -->
+  <section class="slide">
+    <h1>Where the jobs are</h1>
+    <div class="cols">
+      <div class="card shot-card">
+        <img class="shot" alt="GitHub Actions job list for a successful run: lint, test (20), test (22), build, deploy and smoke, each with a green check." src="data:image/png;base64,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">
+        <p class="small">The same run, listed as jobs instead of drawn as a graph.</p>
+      </div>
+      <div class="card">
+        <p><b>A job is one unit of work with its own machine.</b></p>
+        <p>Six jobs here — <code>lint</code>, <code>test (20)</code>, <code>test (22)</code>, <code>build</code>, <code>deploy</code>, <code>smoke</code> — and each reports its own status and duration.</p>
+        <p>The two <code>test</code> entries are <b>one job, run twice</b>. The interface expands a matrix into one row per combination, so you see each runtime separately.</p>
+        <p>Both views describe the same run: the graph for the shape, the list for the detail.</p>
+      </div>
+    </div>
+    <aside class="notes">This slide answers the question "where do I actually see the jobs". In the Actions tab, every run has two views: a summary page listing the jobs with status and duration, and a graph view showing the dependencies. Tell the audience where to find it: repository → Actions tab → click a run. Encourage them to open the real run afterwards — the evidence is public.</aside>
+  </section>
+
+  <!-- ============ SLIDE 12 · LINT ============ -->
+  <section class="slide">
+    <h1>Job 1 · Lint — the rules the team agreed on</h1>
+    <p class="mid">A linter is a program that reads your code and applies a list of rules your team has written down. It never runs your code. It answers one question: <b>does this file follow the rules we agreed?</b></p>
+    <div class="cols">
+      <div class="card">
+        <p><span class="badge a">SYNTAX</span> every file parses — a missing brace would break the build</p>
+        <p><span class="badge a">WIRING</span> the page still has the element IDs the script looks for</p>
+        <p><span class="badge g">CONSISTENCY</span> the command the pipeline calls still exists</p>
+      </div>
+      <div class="card">
+        <p><span class="badge r">SECRETS</span> no credential-shaped text has been committed</p>
+        <p><span class="badge a">WORKFLOW SHAPE</span> the pipeline YAML uses keys the platform accepts</p>
+        <p class="small">50 checks in total. A linter is not a style opinion — it is a list of rules, a message, and an exit code.</p>
+      </div>
+    </div>
+    <aside class="notes">Keep this plain. A linter is not "the robot judge" — it is a rulebook turned into a program. Each of the five groups corresponds to a rule someone actually wrote down, and each one exists because it caught a real mistake. If the audience asks "why not just use ESLint?" — you can, and for many projects you should; the point of the lab is that the shape of a linter is the same whether the rules come from ESLint or from your own team.</aside>
+  </section>
+
+  <!-- ============ SLIDE 13 · WHAT A LINT FAILURE LOOKS LIKE ============ -->
+  <section class="slide">
+    <h1>What a failure actually looks like</h1>
+    <p class="mid">A renamed element ID — a two-character change — and the check refuses to let it through.</p>
+<pre class="code">$ npm run lint
+✔ syntax OK: counter.js
+✔ syntax OK: app.js
+✔ index.html links style.css
+✔ index.html loads app.js as an ES module
+✖ index.html has id="count"
+✔ index.html has id="magic-button"
+✔ index.html has id="reset-button"
+
+Lint FAILED with 1 problem(s). Fix, commit, push.</pre>
+    <div class="mapping">The exit code is the contract: <b>0 = pass, non-zero = fail</b>. That single number is what turns the job red and blocks everything downstream — and what makes the check usable by a machine rather than by a person reading a log.</div>
+    <aside class="notes">This is real output from the linter in this repository, produced by deliberately renaming an element ID. Two points to make: the message names the exact rule and the exact element, so the failure is actionable without reading further; and the non-zero exit code is what makes the failure machine-readable. A check that only prints text without returning a status is documentation, not a control.</aside>
+  </section>
+
+  <!-- ============ SLIDE 14 · TEST + MATRIX ============ -->
+  <section class="slide">
+    <h1>Job 2 · Test — and the same job run twice</h1>
+    <div class="cols">
+      <div class="card shot-card">
+        <img class="shot" alt="Zoom of the GitHub Actions graph showing a node labelled Matrix: test with 2 jobs completed." src="data:image/png;base64,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">
+        <p class="small">One node in the graph, two jobs in the list. The interface groups them.</p>
+      </div>
+      <div class="card">
+        <p><b>A test is one stated expectation</b> — "the counter starts at 0", "a non-integer start is rejected" — written so that it can only pass or fail.</p>
+        <p><b>A matrix runs one job several ways.</b> Here the same test suite runs on Node 20 and Node 22, so the claim "supports Node 20+" is verified rather than asserted.</p>
+        <p>8 unit tests on the counter · 4 integration tests on the linter itself</p>
+      </div>
+    </div>
+    <aside class="notes">Two ideas here. First, a test is a stated expectation, not a script — "the counter starts at 0" is an assertion that either holds or does not. Second, the matrix: one job definition, several configurations, and the interface collapses them into a single node labelled "Matrix: test · 2 jobs completed". If a change breaks only Node 22, both legs stay visible in the run list, so nobody has to guess which runtime failed. Also note the fourth test type: testing your own tooling, because a check that cannot fail is not a control.</aside>
+  </section>
+
+  <!-- ============ SLIDE 15 · BUILD ============ -->
   <section class="slide">
     <h1>Job 3 · Build — the artifact</h1>
     <ul class="bullets">
       <li><b><code>dist/</code> is the artifact</b> — the only thing the deploy job is allowed to publish. It never reads your source.</li>
-      <li><b>Immutable</b> — once built, the artifact cannot change. What you deploy is exactly what was verified.</li>
-      <li><b>Labelled</b> — <code>BUILD_INFO.json</code> carries version, build time and the <b>commit sha</b>.</li>
-      <li><b>Reproducible</b> — same input, same output. If it is not reproducible, "it worked in CI" means nothing.</li>
+      <li><b>Immutable</b> — once built, the artifact cannot change. What is deployed is exactly what was verified.</li>
+      <li><b>Labelled</b> — <code>BUILD_INFO.json</code> carries the version, the build time and the <b>commit ID</b>.</li>
+      <li><b>Reproducible</b> — the same input produces the same output. If it is not reproducible, "it passed in CI" means nothing.</li>
     </ul>
-    <div class="mapping">The commit sha inside the artifact is how you answer "which code is live?" without guessing. <b>That is what the smoke job checks later.</b></div>
-    <aside class="notes">Artifacts are why "build once, deploy many" exists: the staging deploy and the production deploy must run the SAME bytes, otherwise what you tested is not what shipped. Also mention: in a real project you version artifacts (semver + sha) and keep old ones, because rollback needs the previous artifact, not a rebuild.</aside>
+    <div class="mapping">The commit ID inside the artifact is how you answer "which code is live?" without guessing. <b>That is what the smoke job checks afterwards.</b></div>
+    <aside class="notes">The habit to introduce: build once, publish the same bytes everywhere. If the staging release and the production release are built separately, then what was tested is not what shipped, and the audit trail becomes a reconstruction rather than a record. Also mention that the commit ID written into the artifact is a small thing with a large payoff: it turns "which version is live?" from a question into a lookup, and it is the basis of the smoke check on the next slide.</aside>
   </section>
 
-  <!-- ============ SLIDE 9 · DEPLOY / OIDC / ENVIRONMENTS ============ -->
+  <!-- ============ SLIDE 16 · DEPLOY ============ -->
   <section class="slide">
     <h1>Job 4 · Deploy — identity, not passwords</h1>
     <div class="cols">
       <div class="card">
         <p><b>OIDC instead of a stored secret</b></p>
-        <p>The runner mints a <b>short-lived token</b> proving "I am this repo's workflow". Nothing is stored, nothing leaks, nothing to rotate.</p>
+        <p>The runner mints a <b>short-lived token</b> proving "I am this repository's workflow". Nothing is stored, nothing leaks, nothing has to be rotated.</p>
         <p><span class="badge g">id-token: write</span> <span class="badge g">pages: write</span></p>
       </div>
       <div class="card">
         <p><b>environment: production</b></p>
-        <p>Names the target. In <i>Settings → Environments</i> you can attach <b>protection rules</b>: required reviewers, wait timer, branch limits.</p>
+        <p>Names the target. In <i>Settings → Environments</i> you can attach <b>protection rules</b>: required reviewers, a wait timer, branch restrictions.</p>
         <p>Add a reviewer → <b>continuous delivery</b>.</p>
       </div>
     </div>
-    <div class="mapping">Least privilege is a budget: the deploy job gets write access, every other job gets read-only. A compromised lint step cannot publish.</div>
-    <aside class="notes">OIDC is the single biggest change in modern CI security: before, every pipeline needed a long-lived PAT sitting in repo settings, copied between orgs, rotated by hand, and occasionally leaked in a screenshot. Now the platform vouches for the workflow itself. If you ever add a real secret, it goes in Settings → Secrets, never in the repo — and our linter fails the build if a credential-shaped string shows up in a commit.</aside>
+    <div class="mapping">Least privilege is a budget: the deploy job can write, every other job is read-only. A compromised check cannot publish.</div>
+    <aside class="notes">OIDC is the most significant change in modern pipeline security: before, every pipeline needed a long-lived token stored in repository settings, copied between organisations, rotated by hand, and occasionally leaked in a screenshot. Now the platform vouches for the workflow itself and issues a token that expires in minutes. The environment is the second half of the story: it is where "who is allowed to release production" is configured, and it is a control an auditor can see.</aside>
   </section>
 
-  <!-- ============ SLIDE 10 · THE GATE (interactive tabs) ============ -->
+  <!-- ============ SLIDE 17 · THE GATE (interactive tabs) ============ -->
   <section class="slide">
     <h1>The gate — one line, three behaviours</h1>
     <p class="small">Click a tab. This is the same <code>if:</code> line producing all three outcomes.</p>
@@ -491,29 +615,46 @@ body.show-notes .notes::before{
         </div>
         <div class="panel panel-push">
           <p class="big">lint ✅ · test ✅ · build ✅ · deploy ✅ · smoke ✅</p>
-          <p class="mid">A push to <code>main</code> is a <b>release</b>: the whole chain runs, and the smoke job proves the live site answers.</p>
+          <p class="mid">A push to <code>main</code> is a <b>release</b>: the whole chain runs, and the smoke job proves the live site responds.</p>
         </div>
         <div class="panel panel-manual">
           <p class="big">same as push to main <i>if</i> you start it on <code>main</code></p>
-          <p class="mid">The gate checks <b>branch</b> and <b>event type</b> — not "was it a push". On any other branch it stops after build. Honest behaviour, and worth knowing before you demo it.</p>
+          <p class="mid">The gate checks <b>branch</b> and <b>event type</b> — not "was it a push". On any other branch it stops after build. Worth knowing before you demo it.</p>
         </div>
       </div>
     </div>
-    <aside class="notes">This is the single most important slide for a reviewer: the gate is one line of YAML — `if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'` — but it encodes a policy about who may publish. Ask: what would you add if a developer without release authority could push to main? (Answer: branch protection + required reviews + environment reviewers.)</aside>
+    <aside class="notes">This is the single most important slide for a reviewer: one line of YAML encodes a policy about who may publish. The question to put to the room: what would you add if a developer without release authority could push to main? Answer: branch protection, required reviews and environment reviewers — all three are settings, not code, and all three are visible to an auditor.</aside>
   </section>
 
-  <!-- ============ SLIDE 11 · SMOKE ============ -->
+  <!-- ============ SLIDE 18 · THE GATE, EVIDENCE ============ -->
   <section class="slide">
-    <h1>Job 5 · Smoke — green is not the same as working</h1>
-    <p class="mid">A green pipeline means <b>the steps exited 0</b>. It does not mean a user can load the page.</p>
+    <h1>The gate, as recorded</h1>
+    <div class="cols">
+      <div class="card shot-card">
+        <img class="shot" alt="Job list from a run on a non-main branch: lint, test and build succeeded, deploy is grey and skipped." src="data:image/png;base64,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">
+        <p class="small">A run from a branch other than <code>main</code>: the release step is skipped, and the run still counts as successful.</p>
+      </div>
+      <div class="card shot-card">
+        <img class="shot" alt="Workflow graph of the same run, with the deploy node grey and no duration." src="data:image/png;base64,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yldpDZbS5ecfOZKycvWaM+npM99/myMTqFq9e25G1X0FegloCv0JSZLsdvuhE3+olXKNRu3v3eymjzS4nJ9XM6PJXKA35BYUmczWuPBgcdlDymnjoM02gjZblgeWrlwfFR4W+dcrBf56A3FdJYEaO336zKNjnvTz85014924uFgOUaBq9WuYUHkzkxYkp+9z3G6YGBKfGBLfLSS+du8bBuqzBnT5smb/J9DGQZttWG126cp1x1JPOjKAIxVUdhcBQJttKOrdMKHyODsING60caBhqW9XAADUChlVAAAAABAGAAAAABAGAAAAABAGAAAAABAGAAAAABAGAAAAABAGAAAAABAGADRFjtevUg9oyqrzKl/aLECbJQwAaITUSkUN3mUONCYGo1mtVNBmAdosYQBAk6N1dsotKKIe0JTlFhRpXZxos0BDarPOTtQDYQBALfBw1xqN5hxdIVWBpilHV2g0mj3ctLRZoCG1WXctVSGE4PoIgFrg5+ORnaMrMZm93F2dNSoGYqIpsNvtBqM5t6DIaDT7+XjQZgHaLGEAQBOlUihaBPjoCvSZ2bkmi5V7E9EUSJKkViq0zk4tAnxoswBtljAAoKnzcNdy1RWgzQJoQLhnAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAACAMAAAAALgJFPWzWMnp+3ak70tO35ecvk8IkRgSnxgSP773GHYYAAAAUFskg9F8rcukZWTFtg2uuzLNTFowK2nBFX/1Uu8xRAI0EYdOZLQJDqQeAABAHUnLyKp3VwaqSAJCCMevrpoHtv+W/MGs2T8v/aEGBTCUlMTFdzlyYLdareYQgRDiSErq27PmlX2cP/ttV60L1QIAABqB+hUGqk4C1c8Dm39NqnEZtm/fYbFYODJQpqBI371Lx7GPPej4KJdxpw0AACAM1IGrJoGy2bqFxCeGxF/xt//3zvtfLFwkhAgJi3R1dT28/3chxPc//PTf+QtycnLatm0zdfLEzp0ShBC/7977znszjqematSamJjo9999a9/+Ay+O/7cQIrxdeyHE2lXLoyIjOEqauMLCombubhUywPpftqzdlGQ0Gr29PF94arSvjxcVBQAACAM1N7PKJPBS7zHdQuJHLXza8XFH+r7KwsAD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">
+        <p class="small">The same run in graph form — the release node is grey.</p>
+      </div>
+    </div>
+    <div class="mapping">"Skipped" is a different signal from "failed": the release was <b>never attempted</b>, which is exactly the intended behaviour for a branch that is not <code>main</code>.</div>
+    <aside class="notes">Both screenshots are from this repository's own run history. Point out the distinction between skipped and failed, because the two are easy to conflate in a report: failed means the step ran and did not succeed; skipped means the condition excluded it. Also note that the overall run is still marked successful — the pipeline did exactly what it was asked to do. For an auditor this is a clean demonstration that the control is enforced by the platform and not by people remembering to behave.</aside>
+  </section>
+
+  <!-- ============ SLIDE 19 · SMOKE ============ -->
+  <section class="slide">
+    <h1>Job 5 · Smoke — success is not the same as working</h1>
+    <p class="mid">A successful pipeline means <b>the steps exited 0</b>. It does not mean a user can load the page.</p>
     <pre class="code">curl -fsSL --retry 10 --retry-all-errors --retry-delay 5 "$URL"   <span class="c"># 1. reachable (Pages propagates late)</span>
 grep -q "magic-button" /tmp/index.html                                  <span class="c"># 2. it is OUR page</span>
 test "$DEPLOYED" = "$GITHUB_SHA"                                         <span class="c"># 3. built from THIS commit</span></pre>
-    <div class="mapping">The smoke job is the only one that looks at the <b>result</b> instead of the process. It can turn the pipeline red <i>after</i> a successful deploy — which is exactly when you want to know, because the fix is still minutes away.</div>
-    <aside class="notes">This job exists because of the gap between "the deploy command succeeded" and "the site works". Real systems extend it: synthetic monitoring, error-rate alerts, and automatic rollback when the smoke test fails. Mention the retry: GitHub Pages takes seconds to propagate, so the checker needs retry logic too — eventually-consistent systems need the CHECKER to be patient, not just the deploy.</aside>
+    <div class="mapping">The smoke job is the only one that looks at the <b>result</b> rather than the process. It can turn the run red <i>after</i> a successful release — which is exactly when you want to know, because the remedy is still minutes away.</div>
+    <aside class="notes">This job exists because of the gap between "the deploy command succeeded" and "the site works for users". The three assertions are deliberately simple: reachable, correct content, built from this commit. Mention the retry: hosting platforms take seconds to propagate, so the checker needs patience as well as the deploy does. And mention that this is the cheapest incident detection available: minutes instead of a user report.</aside>
   </section>
 
-  <!-- ============ SLIDE 12 · SIMULATOR (interactive) ============ -->
+  <!-- ============ SLIDE 20 · SIMULATOR (interactive) ============ -->
   <section class="slide">
     <h1>Drive the pipeline yourself 🎮</h1>
     <div class="sim">
@@ -543,24 +684,24 @@ test "$DEPLOYED" = "$GITHUB_SHA"                                         <span c
     <aside class="notes">Presenter script: (1) Run the pipeline — all six stages complete successfully and the release animation runs. (2) Select the regression option and run again — the run halts at Test, and Build, Deploy and Smoke do not execute. (3) Revert the fix and re-run — the run completes. The point to land: a failed pipeline is a CONTAINED failure. The defective change reached a test, never production.</aside>
   </section>
 
-  <!-- ============ SLIDE 13 · TEAM FLOW ============ -->
+  <!-- ============ SLIDE 21 · TEAM FLOW ============ -->
   <section class="slide">
     <h1>How this fits into a team's day</h1>
     <div class="cols">
       <div class="card">
-        <p><b>Author</b> — branch, push, open PR, fix red CI.</p>
-        <p><b>Reviewer</b> — reads the diff. A human gate; CI is a machine gate. Neither replaces the other.</p>
+        <p><b>Author</b> — branch, push, open PR, fix a failed check.</p>
+        <p><b>Reviewer</b> — reads the difference. A human gate; CI is a machine gate. Neither replaces the other.</p>
       </div>
       <div class="card">
-        <p><b>Release owner / on-call</b> — owns what happens when a deploy breaks.</p>
-        <p><b>Platform team</b> — owns the pipeline YAML. If every repo has the same 200 lines, they extract a reusable action or a template repo.</p>
+        <p><b>Release owner / on-call</b> — owns what happens when a release breaks.</p>
+        <p><b>Platform team</b> — owns the pipeline itself. If every repository has the same 200 lines, they extract it into a reusable action or a template repository.</p>
       </div>
     </div>
-    <p class="mid">branch → push → <b>PR</b> → review → <b>required status checks green</b> → merge to main → release</p>
-    <aside class="notes">The pipeline is not just YAML, it is a team agreement encoded in YAML. New developers usually get burned by the "who merges what" question, not by the YAML. Say the roles out loud and name who owns the pipeline file — in a small team that is you, and knowing that is part of the job.</aside>
+    <p class="mid">branch → push → <b>PR</b> → review → <b>required status checks green</b> → merge to main → release → verify</p>
+    <aside class="notes">A pipeline is not only YAML — it is a team agreement encoded in YAML. New developers are usually caught out by the "who merges what" question rather than the syntax. Name the roles out loud and name who owns the pipeline file; in a small team that is you, and knowing that is part of the job.</aside>
   </section>
 
-  <!-- ============ SLIDE 14 · PROTECT MAIN ============ -->
+  <!-- ============ SLIDE 22 · PROTECT MAIN ============ -->
   <section class="slide">
     <h1>Protect <code>main</code> — where the gate becomes real</h1>
     <ul class="bullets">
@@ -569,73 +710,73 @@ test "$DEPLOYED" = "$GITHUB_SHA"                                         <span c
       <li>☑ <b>Require pull requests</b> — no direct pushes</li>
       <li>☑ <b>Require branches to be up to date</b> — no stale merges</li>
     </ul>
-    <div class="mapping">YAML can be bypassed by anyone with write access. <b>Repo settings cannot be bypassed by accident</b> — which is why the gate needs both halves.</div>
-    <aside class="notes">Do this on your fork as exercise: try to merge a red PR and GitHub refuses with a link to the failing check. That refusal is the same mechanism that stops a hotfix at 2am from shipping untested code — and it is also the mechanism that can block you, so teams agree an emergency path (break glass, revert, fix forward) in advance.</aside>
+    <div class="mapping">The gate in code can be bypassed by anyone with write access. <b>Repository settings cannot be bypassed by accident</b> — which is why the control needs both halves.</div>
+    <aside class="notes">Ask the room to try it on the fork afterwards: open a PR with a failing test and attempt to merge — the platform refuses, with a link to the failing check. That refusal is the same mechanism that blocks an emergency change at 2am, which is also why teams agree an emergency path in advance: break glass, revert, fix forward, and record it.</aside>
   </section>
 
-  <!-- ============ SLIDE 15 · FAILURE MODES ============ -->
+  <!-- ============ SLIDE 23 · WHAT BREAKS ============ -->
   <section class="slide">
     <h1>What actually breaks in real pipelines</h1>
     <table class="tbl">
       <tr><th>Failure</th><th>What it looks like</th><th>What we do about it</th></tr>
-      <tr><td><b>Flaky test</b></td><td>red 1 run in 20</td><td>fix or delete it — never retry blindly</td></tr>
-      <tr><td><b>Propagation delay</b></td><td>deploy green, site still old</td><td>retry in the checker (our smoke job)</td></tr>
-      <tr><td><b>Secret expiry</b></td><td>deploy fails at auth</td><td>prefer OIDC; rotate what remains</td></tr>
-      <tr><td><b>Runner OOM</b></td><td>job killed, no log tail</td><td>bigger runners, smaller matrix</td></tr>
-      <tr><td><b>Cache poisoning</b></td><td>weird artifacts from a branch</td><td>scope caches; never cache secrets</td></tr>
-      <tr><td><b>Force-push to main</b></td><td>lost history, broken PRs</td><td>protect branches; use <code>git revert</code></td></tr>
+      <tr><td><b>Flaky test</b></td><td>fails intermittently</td><td>fix or remove it — never retry blindly</td></tr>
+      <tr><td><b>Propagation delay</b></td><td>release succeeded, site still serves the old version</td><td>retry in the checker (the smoke job)</td></tr>
+      <tr><td><b>Secret expiry</b></td><td>the release fails at authentication</td><td>prefer OIDC; rotate whatever remains</td></tr>
+      <tr><td><b>Runner out of memory</b></td><td>job killed with no final log</td><td>larger runners, smaller matrix</td></tr>
+      <tr><td><b>Cache poisoning</b></td><td>unexpected build output from a branch</td><td>scope caches; never cache credentials</td></tr>
+      <tr><td><b>Force-push to main</b></td><td>lost history, broken pull requests</td><td>protect branches; use <code>git revert</code></td></tr>
     </table>
-    <aside class="notes">This is the slide that separates "I followed a tutorial" from "I have seen an incident". Every one of these is a real class of failure. The pattern to teach: prefer tools that fail loudly and early (lint, tests, smoke) over tools that fail silently and late (a user reports the bug).</aside>
+    <aside class="notes">This is the slide that separates "I followed a tutorial" from "I have seen an incident". Each row is a real class of failure. The principle to teach: prefer controls that fail loudly and early — lint, tests, smoke — over discovering the problem from a user report. And on flakiness specifically: a test that fails intermittently trains the team to accept red results, which destroys the value of every other check in the pipeline.</aside>
   </section>
 
-  <!-- ============ SLIDE 16 · SECURITY ============ -->
+  <!-- ============ SLIDE 24 · SECURITY ============ -->
   <section class="slide">
     <h1>Security practices that actually matter</h1>
     <ul class="bullets">
       <li><b>Least privilege per job</b> — only <code>deploy</code> can write; everything else is read-only.</li>
-      <li><b>No long-lived secrets</b> — OIDC for Pages; real secrets in <i>Settings → Secrets</i>, never in the repo.</li>
-      <li><b>Treat fork PRs as untrusted input</b> — a PR from a fork runs <i>their</i> code. Never run untrusted code with a write-scoped token (<code>pull_request_target</code> is the classic trap).</li>
-      <li><b>Pin your actions</b> — <code>@v4</code> is readable; a full commit SHA is safe. Know the trade-off.</li>
-      <li><b>Assume every commit is public</b> — deleting a file does not delete it from history; rotate it.</li>
+      <li><b>No long-lived secrets</b> — OIDC for Pages; real secrets in <i>Settings → Secrets</i>, never in the repository.</li>
+      <li><b>Treat pull requests from forks as untrusted input</b> — a fork's code runs on the runner. Never run untrusted code with a write-scoped token (<code>pull_request_target</code> is the classic trap).</li>
+      <li><b>Pin your actions</b> — <code>@v4</code> is readable; a full commit ID is safe. Know the trade-off.</li>
+      <li><b>Assume every commit is permanent</b> — deleting a file does not delete it from history; rotate anything that was exposed.</li>
     </ul>
-    <aside class="notes">The pull_request_target trap is worth a moment of attention: that trigger runs your workflow with your token and secrets against the PR's code — which is how people accidentally expose production keys. The rule of thumb: untrusted code + write-scoped token = never. Our linter's secret scan is the small, automatable version of the habit.</aside>
+    <aside class="notes">The pull_request_target trap is worth a moment of attention: that trigger runs your workflow with your token and secrets against code from the pull request, which is how production keys have been exposed in the wild. The rule of thumb is short: untrusted code plus a write-scoped token is never acceptable. The lint rule that fails a build when a credential-shaped string is committed is the small, automatable version of the same habit.</aside>
   </section>
 
-  <!-- ============ SLIDE 17 · COST ============ -->
+  <!-- ============ SLIDE 25 · COST ============ -->
   <section class="slide">
     <h1>Cost, quotas and caching</h1>
     <div class="cols">
       <div class="card">
-        <p><b>Public repos</b> → free hosted runners.</p>
-        <p><b>Private repos</b> → a monthly minutes allowance (~2,000 on GitHub's Free plan — check current pricing; the number changes).</p>
-        <p><b>Minutes = wall-clock time.</b> A job that hangs for 10 minutes costs 10 minutes.</p>
-        <p>→ that is why every job sets <code>timeout-minutes: 10</code>.</p>
+        <p><b>Public repositories</b> → free hosted runners.</p>
+        <p><b>Private repositories</b> → a monthly minutes allowance (~2,000 on GitHub's Free plan — check current pricing; the number changes).</p>
+        <p><b>Minutes are wall-clock time.</b> A job that hangs for 10 minutes costs 10 minutes.</p>
+        <p>→ that is why every job here sets <code>timeout-minutes: 10</code>.</p>
       </div>
       <div class="card">
         <p><b>Caching</b> reuses downloaded dependencies between runs.</p>
-        <p>This lab has <b>zero dependencies</b> — so there is nothing to cache, and every runner starts instantly.</p>
+        <p>This lab has <b>zero dependencies</b> — so there is nothing to cache, and every runner starts immediately.</p>
         <p>Caches are shared across branches: a poisoned cache is a real supply-chain risk.</p>
         <p><b>Self-hosted runners</b>: no minute limits, but now you own patching, isolation and cleanup.</p>
       </div>
     </div>
-    <aside class="notes">Cost conversations come up in every org review. The three levers: fewer minutes (cache, smaller matrix, faster jobs), cheaper minutes (bigger runners are 2-8x the price but can be faster per job), or your own hardware (self-hosted). Our matrix doubles the test job's minutes — worth it here, not always worth it for a 90-minute suite.</aside>
+    <aside class="notes">Cost conversations come up in every governance review. Three levers: fewer minutes (cache, keep the matrix small, keep jobs fast), cheaper minutes (larger runners cost more per minute but can finish sooner), or your own hardware (self-hosted). Our matrix doubles the test job's minutes — worth it here, not always worth it for a ninety-minute suite. Note that the zero-dependency design is a deliberate teaching choice, not an accident: it is why the lab installs instantly on any machine.</aside>
   </section>
 
-  <!-- ============ SLIDE 18 · METRICS ============ -->
+  <!-- ============ SLIDE 26 · METRICS ============ -->
   <section class="slide">
     <h1>What you would measure (DORA)</h1>
     <table class="tbl">
-      <tr><th>Metric</th><th>Question</th><th>Bad looks like</th></tr>
-      <tr><td><b>Deployment frequency</b></td><td>how often do we ship?</td><td>one big release a month</td></tr>
-      <tr><td><b>Lead time for changes</b></td><td>commit → live, how long?</td><td>days of queueing</td></tr>
-      <tr><td><b>Change failure rate</b></td><td>what % of deploys cause an incident?</td><td>every release needs a hotfix</td></tr>
-      <tr><td><b>Time to restore</b></td><td>when it breaks, how fast is it fixed?</td><td>rollback takes hours</td></tr>
+      <tr><th>Metric</th><th>Question</th><th>Poor practice looks like</th></tr>
+      <tr><td><b>Deployment frequency</b></td><td>how often do we release?</td><td>one large release a month</td></tr>
+      <tr><td><b>Lead time for changes</b></td><td>commit to live — how long?</td><td>days of waiting</td></tr>
+      <tr><td><b>Change failure rate</b></td><td>what share of releases cause an incident?</td><td>every release needs a hotfix</td></tr>
+      <tr><td><b>Time to restore</b></td><td>when it breaks, how fast is it corrected?</td><td>rollback takes hours</td></tr>
     </table>
     <div class="mapping">CI/CD is not "we have a pipeline". It is <b>smaller batches, more often, safer each time</b>. A pipeline that takes 40 minutes trains people to batch large changes — the opposite of the intended outcome.</div>
-    <aside class="notes">If you are asked "how do you know your CI/CD is working?" — these four numbers, and their trend. The counter-intuitive lesson: making the pipeline faster reduces lead time, but the bigger win is making it reliable, because a pipeline people distrust gets ignored. Teams game all four metrics; the honest answer is to look at them together.</aside>
+    <aside class="notes">If asked how you know the CI/CD approach is working, the answer is these four numbers and their trend. The counter-intuitive lesson: making the pipeline faster reduces lead time, but the bigger win is making it reliable, because a pipeline people distrust gets ignored. Also worth saying plainly: these metrics are measures of the delivery system, not of individuals — they are diagnostic, never a performance target for a person.</aside>
   </section>
 
-  <!-- ============ SLIDE 19 · YOUR TURN ============ -->
+  <!-- ============ SLIDE 27 · YOUR TURN ============ -->
   <section class="slide">
     <h1>Your turn 💻 — the commands</h1>
     <ul class="cmd-list">
@@ -648,49 +789,49 @@ test "$DEPLOYED" = "$GITHUB_SHA"                                         <span c
       <li><code>npm run build</code> <button class="copy-btn" type="button">📋 Copy</button></li>
       <li>Then open a PR — watch lint/test/build run and deploy remain skipped.</li>
     </ul>
-    <aside class="notes">These all run free on their own machine (README "Local Mode"). The last line is prose, so it gets no Copy button. Tell them to actually do the PR exercise — the moment they see deploy stay grey on their own PR is the moment the gate stops being a slide and becomes a fact.</aside>
+    <aside class="notes">These all run free on the reader's own machine (README "Local Mode"). The last line is prose, so it gets no copy button. Ask people to actually do the pull-request exercise: the moment they see the release step stay skipped on their own PR, the gate stops being a slide and becomes a fact.</aside>
   </section>
 
-  <!-- ============ SLIDE 20 · PROOF ============ -->
+  <!-- ============ SLIDE 28 · PROOF ============ -->
   <section class="slide">
-    <h1>Proof: this pipeline really ran 🏁</h1>
+    <h1>Evidence: this pipeline really ran 🏁</h1>
     <ul class="bullets">
       <li>📦 <b>github.com/fontvu/cicd-lab</b> — the repository</li>
-      <li>🤖 <b>/actions</b> — every run, every job, every log</li>
+      <li>🤖 <b>/actions</b> — every run, every job, every log, publicly viewable</li>
       <li>🧪 <b>the matrix</b> — <code>test (node 20)</code> and <code>test (node 22)</code>, both successful</li>
       <li>⏭️ <b>the gate</b> — a non-<code>main</code> run: lint/test/build successful, deploy + smoke <b>skipped</b></li>
-      <li>🌐 <b>the smoke job</b> — fetches the live site and compares its commit sha with the run</li>
+      <li>🌐 <b>the smoke job</b> — fetches the live site and compares its commit ID with the run</li>
       <li>🚚 <b>the live site</b> — <b>fontvu.github.io/cicd-lab</b>, and <b>/BUILD_INFO.json</b> shows which commit built it</li>
     </ul>
-    <aside class="notes">Presenter script: open Actions, open the most recent successful run — six checks (lint, two test legs, build, deploy, smoke). Then open a run from a non-main branch: three successful and two skipped. Ask: was anything deployed? No — because the ref was not main. Same code, same controls, a different path. The BUILD_INFO trick is worth pointing out: the live site can tell you which commit it came from, so "it works on my machine" becomes checkable.</aside>
+    <aside class="notes">Presenter script: open Actions, open the most recent successful run — six checks (lint, two test legs, build, deploy, smoke). Then open a run from a non-main branch: three successful and two skipped. Ask: was anything deployed? No — because the ref was not main. Same code, same controls, a different path. The BUILD_INFO detail is worth pointing out: the live site can tell you which commit it came from, so "it works on my machine" becomes checkable.</aside>
   </section>
 
-  <!-- ============ SLIDE 21 · QUIZ ============ -->
+  <!-- ============ SLIDE 29 · QUIZ ============ -->
   <section class="slide">
     <h1>Quiz time 🧠 — tap an answer (1/2)</h1>
     <div id="quiz" class="quiz-wrap"></div>
     <aside class="notes">Answer out loud before tapping. Wrong answers are presented as neutral feedback — the intent is reinforcement, not assessment. A wrong answer from the room is useful: it identifies where the concept needs more explanation.</aside>
   </section>
 
-  <!-- ============ SLIDE 22 · QUIZ (part 2) ============ -->
+  <!-- ============ SLIDE 30 · QUIZ (part 2) ============ -->
   <section class="slide">
     <h1>Quiz time 🧠 — tap an answer (2/2)</h1>
     <div id="quiz2" class="quiz-wrap"></div>
-    <aside class="notes">Same deal for questions 4-6. The last one (OIDC vs a stored secret) is the one people argue about in interviews — the answer is "no long-lived secret to leak or rotate", not "faster" and definitely not "it encrypts the site".</aside>
+    <aside class="notes">Same for questions 4-6. The last one (OIDC versus a stored secret) is the one people argue about in interviews: the answer is "no long-lived secret to leak or rotate", not "faster", and certainly not "it encrypts the site".</aside>
   </section>
 
-  <!-- ============ SLIDE 23 · RECAP ============ -->
+  <!-- ============ SLIDE 31 · RECAP ============ -->
   <section class="slide">
     <h1>Recap 🎓</h1>
     <ul class="bullets">
-      <li>📝 <b>Code</b> → 🔍 <b>CI</b> (lint + test, on every runtime) → 📦 <b>artifact</b> → 🚚 <b>CD</b> (deploy) → 🌐 <b>verify</b></li>
+      <li>📝 <b>Code</b> → 🔍 <b>CI</b> (lint + test, on every runtime) → 📦 <b>artifact</b> → 🚚 <b>CD</b> (release) → 🌐 <b>verify</b></li>
       <li>🔒 <b>Least privilege + OIDC</b> instead of stored secrets</li>
-      <li>🚦 <b>The gate</b> = branch + event type (+ repo protection rules)</li>
-      <li>🧪 <b>Smoke test</b> = green steps are not a working site</li>
+      <li>🚦 <b>The gate</b> = branch + event type (+ repository protection rules)</li>
+      <li>🧪 <b>Smoke test</b> = a successful run is not a working site</li>
       <li>⏪ <b>Rollback</b> = <code>git revert</code> + push. Normal operation, not a crisis.</li>
     </ul>
-    <div class="mapping">Homework: break the lab on purpose. Break a test, break the HTML wiring, commit a fake secret — and watch which job catches it. <b>A failure you can explain is a control working as designed; one you cannot explain is a finding waiting to be raised.</b></div>
-    <aside class="notes">Close by naming the next steps for a real project: a staging environment, dependency caching, an E2E test with Playwright, and a release workflow that tags a version. Each of those is one small addition to what exists here — which is the whole point: CI/CD is not a product you buy, it is a habit you build one gate at a time.</aside>
+    <div class="mapping">Homework: break the lab on purpose. Break a test, break the HTML wiring, commit a credential-shaped string — and observe which job catches it. <b>A failure you can explain is a control working as designed; one you cannot explain is a finding waiting to be raised.</b></div>
+    <aside class="notes">Close by naming the next steps for a real service: a staging environment, dependency caching, an end-to-end test with a real browser, and a release workflow that tags a version. Each is a small addition to what exists here — which is the whole point: continuous delivery is not a product you buy, it is a set of controls you add one at a time, each of which you can evidence.</aside>
   </section>
   </main>
 

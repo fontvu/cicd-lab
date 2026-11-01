@@ -47,7 +47,7 @@ nod. Both are normal; the choice is a risk decision, not a technical one.
 
 ## 🎤 The talk (presentation.html)
 
-There is a companion slide deck: **`presentation.html`** — 23 slides, a
+There is a companion slide deck: **`presentation.html`** — 31 slides, a
 clickable pipeline simulator where you break the build on purpose, a
 failure-triage walkthrough, and a quiz. **Open it in a browser for the
 guided tour.** It is one self-contained file — no internet needed, works even
