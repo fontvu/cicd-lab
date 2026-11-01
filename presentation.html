@@ -363,8 +363,16 @@ body.show-notes .notes::before{
       <span class="pipe-box">Gated, evidenced delivery</span>
       <span class="pipe-dot"></span>
     </div>
-    <div class="mapping">Each step removed a specific failure mode: <b>toil</b> (people copying steps), <b>drift</b> (scripts that rot), <b>integration risk</b> (big infrequent batches), <b>uncontrolled change</b> (anything reaching production unverified), and finally <b>unprovable change</b> (no record of what shipped). The last one is why this is also an audit topic.</div>
-    <aside class="notes">Do not lecture here — narrate. The question to put to the room: "which of these five steps does your organisation currently sit at?" Most organisations are between two and three, and the gap between "scripted" and "verified" is where audit findings live. The point to land: the pipeline is not a tooling preference, it is the answer to a series of specific failure modes, and it is also where the evidence trail comes from.</aside>
+    <table class="tbl">
+      <tr><th>The step</th><th>What went wrong before it existed</th></tr>
+      <tr><td><b>Manual release</b></td><td>the steps lived in one person's head — a forgotten file broke the release</td></tr>
+      <tr><td><b>Scripted release</b></td><td>the script quietly stopped matching reality, and nobody noticed until it was needed</td></tr>
+      <tr><td><b>Verify every change</b></td><td>many changes landed together, so when it broke nobody could say which one caused it</td></tr>
+      <tr><td><b>Release automatically</b></td><td>changes reached production without being checked at all</td></tr>
+      <tr><td><b>Gated, evidenced delivery</b></td><td>no record of what was proposed, approved and released — so it could not be evidenced</td></tr>
+    </table>
+    <p class="small">The last row is why this is also an audit topic: the record is a by-product of the work, not something assembled afterwards.</p>
+    <aside class="notes">Do not lecture here — narrate. Work down the table and ask: "which of these have you actually experienced?" Every row is a concrete, familiar failure, not an abstract category. Then put the question to the room: "which of these five steps does your organisation currently sit at?" Most organisations are between two and three, and the gap between "scripted" and "verified" is where audit findings live. The point to land: the pipeline is not a tooling preference — it is the answer to a series of specific, familiar failures, and it is also where the evidence trail comes from.</aside>
   </section>
 
   <!-- ============ SLIDE 3 · VOCABULARY: THE REPOSITORY ============ -->
