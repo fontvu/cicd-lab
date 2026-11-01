@@ -15,16 +15,23 @@
 
 /* ---------- palette + base ---------- */
 :root{
-  --ink:#111111;
+  /* Masan corporate palette: deep navy #00447C on white, with a cool
+     grey-blue for structure. Semantic status colours stay green/red so a
+     check still reads as a check, not as a brand element. */
+  --brand:#00447c;      /* Masan corporate navy — headings, key accents */
+  --brand-dark:#00335c; /* pressed / emphasis                          */
+  --tint:#eaf1f7;       /* pale navy wash — callouts                   */
+  --tint-2:#f3f7fa;     /* even paler — table headers                  */
+  --ink:#1c2430;        /* body text                                   */
   --paper:#ffffff;
-  --cream:#fff7ec;      /* warm page background */
-  --border:#e3d7c3;     /* warm hairline */
-  --brown:#7c2d12;      /* warm dark headings */
-  --green:#1a7f37;      /* success / go      */
-  --red:#cf222e;        /* failure / stop    */
-  --amber:#bf8700;      /* running / caution */
-  --term-bg:#0d1117;    /* fake terminal bg  */
-  --term-ink:#7ee787;   /* fake terminal text*/
+  --cream:#f7f9fb;      /* page background                             */
+  --border:#d8e2ec;     /* hairline                                    */
+  --brown:#00447c;      /* kept as the heading slot (now navy)         */
+  --green:#1a7f37;      /* success                                     */
+  --red:#c8102e;        /* failure                                     */
+  --amber:#4a7ba7;      /* in-progress / secondary accent (steel blue) */
+  --term-bg:#0b1b2b;    /* terminal background                         */
+  --term-ink:#9fe6a0;   /* terminal text                               */
 }
 
 *{box-sizing:border-box}
@@ -62,13 +69,17 @@ h1{
   color:var(--brown);
 }
 p{margin:.35em 0}
+.eyebrow{
+  margin:0 0 .2em;font-size:.95rem;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--brand);
+}
 .big{font-size:clamp(1.6rem,3.4vw,2.4rem);font-weight:800}
 .mid{font-size:clamp(1.4rem,2.6vw,1.9rem);max-width:1050px}
 .small{font-size:1.1rem;color:#5b4a35}
 .def{font-size:1.25rem;font-weight:700}
 code{
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  background:#f6efe3;border:1px solid var(--border);
+  background:var(--tint-2);border:1px solid var(--border);
   border-radius:8px;padding:.08em .4em;font-size:.85em;
 }
 ul.bullets{list-style:none;padding:0;margin:0}
@@ -79,21 +90,34 @@ ul.bullets li{margin:.35em 0}
   box-shadow:0 6px 18px rgba(124,45,18,.08);
 }
 .mapping{
-  margin-top:14px;background:#fff8e1;border:2px solid var(--amber);
+  margin-top:14px;background:var(--tint);border:2px solid var(--brand);
   border-radius:14px;padding:12px 18px;font-size:1.25rem;max-width:920px;
 }
-.mapping b{color:#7c4a03}
+.mapping b{color:var(--brand-dark)}
 .red-good{color:var(--red)}
 
 /* ---------- slide 4: animated pipeline map ---------- */
-.pipe{position:relative;display:flex;align-items:center;gap:6px;margin:8px 0;flex-wrap:nowrap}
+.pipe{
+  position:relative;display:flex;align-items:stretch;gap:6px;margin:10px 0;
+  width:min(1180px,96vw);
+  /* nowrap + flex:1 boxes = the row shrinks to fit instead of dropping a box
+     onto a second line (MacBook Air, 13", narrower browser windows). */
+  flex-wrap:nowrap;
+}
 .pipe-box{
   position:relative;z-index:1;background:var(--paper);
-  border:3px solid #8a6d3b;border-radius:16px;padding:12px 16px;
-  font-size:clamp(1.1rem,2vw,1.5rem);font-weight:700;white-space:nowrap;
-  box-shadow:0 4px 0 #e3d7c3;
+  border:2px solid #c9d8e6;border-radius:14px;padding:10px 8px;
+  flex:1 1 0;min-width:0;                 /* equal widths, allowed to shrink */
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:clamp(.8rem,1.35vw,1.06rem);font-weight:700;line-height:1.25;
+  white-space:normal;                     /* the text wraps INSIDE the box  */
+  box-shadow:0 3px 0 #e3ebf3;
 }
-.pipe-arrow{font-size:1.8rem;color:var(--amber);animation:nudge .8s ease-in-out infinite alternate}
+.pipe-arrow{
+  flex:0 0 auto;align-self:center;
+  font-size:clamp(1rem,1.4vw,1.4rem);color:var(--brand);
+  animation:nudge .8s ease-in-out infinite alternate;
+}
 @keyframes nudge{from{transform:translateX(0)}to{transform:translateX(8px)}}
 .pipe-dot{
   position:absolute;left:2%;top:50%;width:16px;height:16px;margin-top:-8px;
@@ -106,32 +130,32 @@ ul.bullets li{margin:.35em 0}
 #controls{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
   display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
-  padding:10px 14px;background:rgba(255,247,236,.97);
+  padding:10px 14px;background:rgba(255,255,255,.97);
   border-top:2px solid var(--border);
 }
 #controls button{font-size:1.1rem}
 #dots{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .dot{
-  width:14px;height:14px;border-radius:50%;padding:0;cursor:pointer;
-  border:2px solid #8a6d3b;background:#fff;
+  width:12px;height:12px;border-radius:50%;padding:0;cursor:pointer;
+  border:2px solid #9fb3c8;background:#fff;
 }
-.dot.active{background:var(--amber);transform:scale(1.3)}
+.dot.active{background:var(--brand);border-color:var(--brand);transform:scale(1.3)}
 #counter{font-weight:800;min-width:11ch}
 
 /* ---------- top progress bar ---------- */
-#topbar{position:fixed;top:0;left:0;height:7px;width:0;background:var(--amber);z-index:60;transition:width .3s ease}
+#topbar{position:fixed;top:0;left:0;height:5px;width:0;background:var(--brand);z-index:60;transition:width .3s ease}
 
 /* ---------- speaker notes panel ---------- */
 .notes{display:none}
 body.show-notes .notes{
   display:block;position:fixed;left:50%;transform:translateX(-50%);
   bottom:80px;width:min(940px,92vw);max-height:32vh;overflow-y:auto;
-  background:#fffbea;border:3px solid var(--amber);border-radius:14px;
+  background:var(--tint);border:2px solid var(--brand);border-radius:14px;
   padding:12px 18px;font-size:1.15rem;text-align:left;z-index:50;
   box-shadow:0 8px 24px rgba(0,0,0,.18);
 }
 body.show-notes .notes::before{
-  content:"🗒️ Speaker notes";display:block;font-weight:800;color:#7c4a03;margin-bottom:4px;
+  content:"🗒️ Speaker notes";display:block;font-weight:800;color:var(--brand-dark);margin-bottom:4px;
 }
 
 /* ---------- buttons ---------- */
@@ -141,10 +165,10 @@ body.show-notes .notes::before{
 }
 .btn:active{transform:translateY(2px)}
 .nav-btn{
-  font:inherit;background:var(--paper);border:2px solid #8a6d3b;color:var(--ink);
+  font:inherit;background:var(--paper);border:2px solid #9fb3c8;color:var(--ink);
   border-radius:999px;padding:.45em 1.1em;min-height:44px;cursor:pointer;
 }
-.nav-btn:hover{background:#fff3dd}
+.nav-btn:hover{background:var(--tint)}
 #btn-commit{background:var(--green);color:#fff;box-shadow:0 5px 0 #14622b;font-size:1.5rem}
 #btn-commit:active{box-shadow:0 2px 0 #14622b}
 #btn-fix{background:var(--amber);color:#fff;box-shadow:0 5px 0 #8a6500}
@@ -183,11 +207,11 @@ body.show-notes .notes::before{
 .confetti-zone{
   position:relative;min-height:230px;border-radius:16px;overflow:hidden;
   border:2px solid var(--border);
-  background:linear-gradient(#ffe9a8,#fff6dd); /* warm sky */
+  background:linear-gradient(#e8f0f7,#f8fbfd); /* cool sky */
 }
 .road{
   position:absolute;left:10px;right:10px;bottom:16px;height:56px;
-  border:3px dashed #a08040;border-radius:10px;background:#fdf3dc;
+  border:2px dashed #8fa9c0;border-radius:10px;background:#f2f6fa;
 }
 #truck{
   position:absolute;left:-10%;bottom:6px;font-size:2.6rem;z-index:2;
@@ -213,9 +237,9 @@ body.show-notes .notes::before{
 .cmd-list code{font-size:1.05rem}
 .copy-btn{
   font:inherit;font-size:1rem;cursor:pointer;border-radius:999px;
-  border:2px solid #8a6d3b;background:#fff;padding:.3em 1em;min-height:40px;
+  border:2px solid #9fb3c8;background:#fff;padding:.3em 1em;min-height:40px;
 }
-.copy-btn:hover{background:#fff3dd}
+.copy-btn:hover{background:var(--tint)}
 .copy-btn:disabled{opacity:.55;cursor:default}
 
 /* ---------- slide 21: quiz (two columns, so all six questions fit) -------- */
@@ -231,9 +255,9 @@ body.show-notes .notes::before{
 .q-opts{display:flex;flex-wrap:wrap;gap:6px}
 .opt{
   font:inherit;font-size:.95rem;cursor:pointer;border-radius:999px;
-  border:2px solid #8a6d3b;background:#fff;padding:.3em .9em;min-height:38px;
+  border:2px solid #9fb3c8;background:#fff;padding:.3em .9em;min-height:38px;
 }
-.opt:hover{background:#fff3dd}
+.opt:hover{background:var(--tint)}
 .opt.green{background:#dafbe1;border-color:var(--green);color:#0b3d1e;font-weight:800}
 .opt.red{background:#ffebe9;border-color:var(--red);color:#5c1015;animation:shake .45s}
 .opt:disabled{cursor:default}
@@ -251,10 +275,10 @@ body.show-notes .notes::before{
 .shot-card{padding:12px 14px;text-align:center}
 .shot-card .shot{width:100%;max-width:420px}
 .shot-card .small{margin:.4em 0 0}
-/* the five-step arc on slide 2 must wrap rather than overflow on a narrow screen */
-.pipe{flex-wrap:wrap;justify-content:center}
 
 /* ---------- intern-level slides: columns, tables, badges, code ---------- */
+.legend{max-width:1000px;font-size:1.05rem;text-align:left;margin-top:6px}
+.legend li{margin:.3em 0}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:min(1120px,94vw);text-align:left}
 .cols .card{font-size:1.06rem;line-height:1.4}
 .cols .card p{margin:.3em 0}
@@ -264,7 +288,7 @@ body.show-notes .notes::before{
   font-size:1rem;text-align:left;
 }
 .tbl th,.tbl td{border-bottom:1px solid var(--border);padding:7px 12px;vertical-align:top}
-.tbl th{background:#fdf3dc;font-weight:800}
+.tbl th{background:var(--tint-2);font-weight:800;color:var(--brand-dark)}
 .tbl tr:last-child td{border-bottom:0}
 .badge{
   display:inline-block;padding:.1em .65em;border-radius:999px;
@@ -272,7 +296,7 @@ body.show-notes .notes::before{
 }
 .badge.g{background:#dafbe1;border-color:var(--green);color:#0b3d1e}
 .badge.r{background:#ffebe9;border-color:var(--red);color:#5c1015}
-.badge.a{background:#fff8e1;border-color:var(--amber);color:#7c4a03}
+.badge.a{background:var(--tint);border-color:var(--brand);color:var(--brand-dark)}
 .code{
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   background:var(--term-bg);color:var(--term-ink);
@@ -289,11 +313,11 @@ body.show-notes .notes::before{
 .tabs input{position:absolute;opacity:0;pointer-events:none}
 .tab-labels{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
 .tab-labels label{
-  cursor:pointer;border:2px solid #8a6d3b;background:#fff;border-radius:999px;
+  cursor:pointer;border:2px solid #9fb3c8;background:#fff;border-radius:999px;
   padding:.4em 1.15em;font-size:1.1rem;font-weight:700;min-height:44px;
   display:inline-flex;align-items:center;
 }
-.tab-labels label:hover{background:#fff3dd}
+.tab-labels label:hover{background:var(--tint)}
 .panel{
   display:none;background:var(--paper);border:2px solid var(--border);
   border-radius:18px;padding:16px 24px;box-shadow:0 6px 18px rgba(124,45,18,.08);
@@ -341,10 +365,11 @@ body.show-notes .notes::before{
 <main id="deck">
   <!-- ============ SLIDE 1 · TITLE ============ -->
   <section class="slide">
+    <p class="eyebrow">A working study · not a training course</p>
     <h1>🚀 CI/CD — from commit to production</h1>
-    <p class="mid">A guided tour of the pipeline in this repo: what runs, what it protects you from, and what actually breaks in the real world.</p>
-    <p class="small">31 slides · interactive · press → to start</p>
-    <aside class="notes">Frame the session: this session is about the decisions behind the pipeline rather than the tooling itself. Each stage answers one question: what can go wrong here, and which control catches it? The implementation lives in a separate repository (the lab); this deck covers the reasoning you would be expected to defend in a code review or an audit.</aside>
+    <p class="mid">What I set out to understand about automated delivery, what I built to test that understanding, and what I concluded. The lab behind it is small enough to read in one sitting — and it runs.</p>
+    <p class="small">31 slides · one working pipeline · press → to start</p>
+    <aside class="notes">Set the frame honestly: this is not a course, it is a piece of work. The claim is not "I know CI/CD" but "here is what I built, here is what I measured, and here is why each decision is defensible". Invite challenge — the interesting questions are about the trade-offs, not the definitions. Every screenshot in this deck is from a real run of the lab, and the lab itself is written so someone else can run it and reach their own conclusions.</aside>
   </section>
 
   <!-- ============ SLIDE 2 · WHAT SRE HAS BEEN DOING ============ -->
@@ -366,7 +391,7 @@ body.show-notes .notes::before{
     <table class="tbl">
       <tr><th>The step</th><th>What went wrong before it existed</th></tr>
       <tr><td><b>Manual release</b></td><td>the steps lived in one person's head — a forgotten file broke the release</td></tr>
-      <tr><td><b>Scripted release</b></td><td>the script quietly stopped matching reality, and nobody noticed until it was needed</td></tr>
+      <tr><td><b>Scripted release</b></td><td>the script slowly stopped matching reality, and nobody noticed until it was needed</td></tr>
       <tr><td><b>Verify every change</b></td><td>many changes landed together, so when it broke nobody could say which one caused it</td></tr>
       <tr><td><b>Release automatically</b></td><td>changes reached production without being checked at all</td></tr>
       <tr><td><b>Gated, evidenced delivery</b></td><td>no record of what was proposed, approved and released — so it could not be evidenced</td></tr>
@@ -380,7 +405,7 @@ body.show-notes .notes::before{
     <h1>Vocabulary 1 — the repository</h1>
     <table class="tbl">
       <tr><th>Term</th><th>In plain terms</th><th>You will see it here</th></tr>
-      <tr><td><b>repository</b> (repo)</td><td>the project: its files and its full history, held on a server</td><td><code>github.com/fontvu/cicd-lab</code></td></tr>
+      <tr><td><b>repository</b> (repo)</td><td>the project: its files and its full history, held on a server</td><td><code>github.com/&lt;your-name&gt;/cicd-lab</code></td></tr>
       <tr><td><b>commit</b></td><td>one saved change, with a message and a unique ID</td><td><code>4a1c7f0</code> in <code>BUILD_INFO.json</code></td></tr>
       <tr><td><b>branch</b></td><td>a parallel line of work, so a half-finished change cannot land</td><td><code>feature/my-change</code></td></tr>
       <tr><td><b>main</b></td><td>the branch that holds released work — the only one that may deploy</td><td>the <code>deploy</code> job's gate</td></tr>
@@ -436,7 +461,7 @@ body.show-notes .notes::before{
       <tr><td><b>OIDC</b></td><td>a short-lived identity the platform vouches for — no stored password at all</td><td><code>id-token: write</code></td></tr>
       <tr><td><b>least privilege</b></td><td>each job gets only the permission it needs, and no more</td><td><code>permissions:</code> per job</td></tr>
       <tr><td><b>concurrency</b></td><td>only one run may publish at a time</td><td><code>group: pages</code></td></tr>
-      <tr><td><b>Pages</b></td><td>GitHub's static hosting for a published artifact</td><td><code>fontvu.github.io/cicd-lab</code></td></tr>
+      <tr><td><b>Pages</b></td><td>GitHub's static hosting for a published artifact</td><td><code>&lt;your-name&gt;.github.io/cicd-lab</code></td></tr>
       <tr><td><b>smoke test</b></td><td>a check after release that the live thing actually responds</td><td>the <code>smoke</code> job</td></tr>
       <tr><td><b>audit trail</b></td><td>the record of what was proposed, approved, built and released</td><td>the run history and its logs</td></tr>
       <tr><td><b>DORA metrics</b></td><td>four measures of delivery performance, tracked as trends</td><td>frequency, lead time, failure rate, restore time</td></tr>
@@ -494,9 +519,14 @@ body.show-notes .notes::before{
   <!-- ============ SLIDE 10 · THE PIPELINE, AS IT ACTUALLY RUNS ============ -->
   <section class="slide">
     <h1>The pipeline, as it actually ran</h1>
-    <img class="shot wide" alt="GitHub Actions workflow graph of a successful run: a Matrix test node with 2 jobs completed and a lint node, both feeding build, then deploy with the live URL, then smoke." src="data:image/png;base64,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">
-    <p class="small">This is the workflow graph of a real run of this repository, captured from the Actions tab. Read it left to right: two checks run in parallel, then the pipeline continues in one direction.</p>
-    <aside class="notes">Point at the three things worth noticing in the picture. First, the leftmost box is labelled "Matrix: test — 2 jobs completed": that is one job definition executed twice, once per Node version. Second, lint runs in parallel with it, so neither waits for the other. Third, the deploy node carries the live URL it published — the graph is also the record of where the change went.</aside>
+    <img class="shot wide" alt="GitHub Actions workflow graph of a successful run: a Matrix test node with 2 jobs completed and a lint node, both feeding build, then deploy with the live URL, then smoke." src="data:image/png;base64,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">
+    <p class="small">A real run of this lab, copied from the Actions tab. Read it left to right.</p>
+    <ul class="bullets legend">
+      <li><b>Top left</b> — “Matrix: test · 2 jobs completed”. One test job, run twice: once for each version of Node. The run page lists both results separately.</li>
+      <li><b>Just below it</b> — “lint”. The code check ran at the same time as the tests, not afterwards.</li>
+      <li><b>Then, in a line</b> — build → deploy → smoke. The grey bar inside the deploy box hides the web address it published to, so this deck works for whoever runs the lab.</li>
+    </ul>
+    <aside class="notes">Walk it left to right, out loud, without jargon. Top left: "2 jobs completed" means one job definition was run twice — once per Node version — and both results are listed separately. Just below it: lint, which ran at the same time, so neither waited for the other. Then build, deploy and smoke follow in a line. The grey bar in the deploy box is a redaction of the web address. The point of the picture: this is not a diagram I drew, it is the record the platform kept.</aside>
   </section>
 
   <!-- ============ SLIDE 11 · WHERE THE JOBS ARE ============ -->
@@ -564,7 +594,7 @@ Lint FAILED with 1 problem(s). Fix, commit, push.</pre>
       </div>
       <div class="card">
         <p><b>A test is one stated expectation</b> — "the counter starts at 0", "a non-integer start is rejected" — written so that it can only pass or fail.</p>
-        <p><b>A matrix runs one job several ways.</b> Here the same test suite runs on Node 20 and Node 22, so the claim "supports Node 20+" is verified rather than asserted.</p>
+        <p><b>A "matrix" runs one job several ways.</b> Here the same tests run on Node 20 and on Node 22, so "supports Node 20 and later" is something we <i>checked</i>, not something we assumed.</p>
         <p>8 unit tests on the counter · 4 integration tests on the linter itself</p>
       </div>
     </div>
@@ -575,10 +605,10 @@ Lint FAILED with 1 problem(s). Fix, commit, push.</pre>
   <section class="slide">
     <h1>Job 3 · Build — the artifact</h1>
     <ul class="bullets">
-      <li><b><code>dist/</code> is the artifact</b> — the only thing the deploy job is allowed to publish. It never reads your source.</li>
-      <li><b>Immutable</b> — once built, the artifact cannot change. What is deployed is exactly what was verified.</li>
-      <li><b>Labelled</b> — <code>BUILD_INFO.json</code> carries the version, the build time and the <b>commit ID</b>.</li>
-      <li><b>Reproducible</b> — the same input produces the same output. If it is not reproducible, "it passed in CI" means nothing.</li>
+      <li><b><code>dist/</code> is the built output</b> (the "artifact") — the only thing the deploy job is allowed to publish. It never reads your source.</li>
+      <li><b>It cannot be changed afterwards.</b> What gets deployed is exactly what was checked — nothing can be edited in between.</li>
+      <li><b>It carries a label.</b> <code>BUILD_INFO.json</code> records the version, the build time and the <b>commit ID</b>.</li>
+      <li><b>Same input, same output.</b> If a build cannot be repeated, "it passed on my machine" tells you nothing.</li>
     </ul>
     <div class="mapping">The commit ID inside the artifact is how you answer "which code is live?" without guessing. <b>That is what the smoke job checks afterwards.</b></div>
     <aside class="notes">The habit to introduce: build once, publish the same bytes everywhere. If the staging release and the production release are built separately, then what was tested is not what shipped, and the audit trail becomes a reconstruction rather than a record. Also mention that the commit ID written into the artifact is a small thing with a large payoff: it turns "which version is live?" from a question into a lookup, and it is the basis of the smoke check on the next slide.</aside>
@@ -589,8 +619,8 @@ Lint FAILED with 1 problem(s). Fix, commit, push.</pre>
     <h1>Job 4 · Deploy — identity, not passwords</h1>
     <div class="cols">
       <div class="card">
-        <p><b>OIDC instead of a stored secret</b></p>
-        <p>The runner mints a <b>short-lived token</b> proving "I am this repository's workflow". Nothing is stored, nothing leaks, nothing has to be rotated.</p>
+        <p><b>A short-lived identity instead of a stored password</b> (this is what "OIDC" means here)</p>
+        <p>The temporary machine asks GitHub for a <b>token that expires in minutes</b> and proves "I am this repository's pipeline". Nothing is stored, nothing leaks, nothing has to be rotated by hand.</p>
         <p><span class="badge g">id-token: write</span> <span class="badge g">pages: write</span></p>
       </div>
       <div class="card">
@@ -599,7 +629,7 @@ Lint FAILED with 1 problem(s). Fix, commit, push.</pre>
         <p>Add a reviewer → <b>continuous delivery</b>.</p>
       </div>
     </div>
-    <div class="mapping">Least privilege is a budget: the deploy job can write, every other job is read-only. A compromised check cannot publish.</div>
+    <div class="mapping">Each job gets only the access it needs: the deploy job can publish, every other job can only read. If a check were compromised, it still could not publish anything.</div>
     <aside class="notes">OIDC is the most significant change in modern pipeline security: before, every pipeline needed a long-lived token stored in repository settings, copied between organisations, rotated by hand, and occasionally leaked in a screenshot. Now the platform vouches for the workflow itself and issues a token that expires in minutes. The environment is the second half of the story: it is where "who is allowed to release production" is configured, and it is a control an auditor can see.</aside>
   </section>
 
@@ -654,11 +684,11 @@ Lint FAILED with 1 problem(s). Fix, commit, push.</pre>
   <!-- ============ SLIDE 19 · SMOKE ============ -->
   <section class="slide">
     <h1>Job 5 · Smoke — success is not the same as working</h1>
-    <p class="mid">A successful pipeline means <b>the steps exited 0</b>. It does not mean a user can load the page.</p>
+    <p class="mid">A green pipeline only means <b>every step finished without an error</b>. It does not mean a person can load the page.</p>
     <pre class="code">curl -fsSL --retry 10 --retry-all-errors --retry-delay 5 "$URL"   <span class="c"># 1. reachable (Pages propagates late)</span>
 grep -q "magic-button" /tmp/index.html                                  <span class="c"># 2. it is OUR page</span>
 test "$DEPLOYED" = "$GITHUB_SHA"                                         <span class="c"># 3. built from THIS commit</span></pre>
-    <div class="mapping">The smoke job is the only one that looks at the <b>result</b> rather than the process. It can turn the run red <i>after</i> a successful release — which is exactly when you want to know, because the remedy is still minutes away.</div>
+    <div class="mapping">This is the only job that checks the <b>outcome</b> instead of the process. It can fail the run <i>after</i> a release that looked fine — which is exactly when you want to know, because the fix is still minutes away.</div>
     <aside class="notes">This job exists because of the gap between "the deploy command succeeded" and "the site works for users". The three assertions are deliberately simple: reachable, correct content, built from this commit. Mention the retry: hosting platforms take seconds to propagate, so the checker needs patience as well as the deploy does. And mention that this is the cheapest incident detection available: minutes instead of a user report.</aside>
   </section>
 
@@ -741,10 +771,10 @@ test "$DEPLOYED" = "$GITHUB_SHA"                                         <span c
   <section class="slide">
     <h1>Security practices that actually matter</h1>
     <ul class="bullets">
-      <li><b>Least privilege per job</b> — only <code>deploy</code> can write; everything else is read-only.</li>
-      <li><b>No long-lived secrets</b> — OIDC for Pages; real secrets in <i>Settings → Secrets</i>, never in the repository.</li>
+      <li><b>Only the access it needs, per job</b> — only <code>deploy</code> can publish; everything else can only read.</li>
+      <li><b>No long-lived passwords</b> — the deploy uses a token that expires in minutes; any real secret goes in <i>Settings → Secrets</i>, never in the repository.</li>
       <li><b>Treat pull requests from forks as untrusted input</b> — a fork's code runs on the runner. Never run untrusted code with a write-scoped token (<code>pull_request_target</code> is the classic trap).</li>
-      <li><b>Pin your actions</b> — <code>@v4</code> is readable; a full commit ID is safe. Know the trade-off.</li>
+      <li><b>Pin the versions you depend on</b> — <code>@v4</code> is readable; a full commit ID cannot be swapped under you. Know the trade-off.</li>
       <li><b>Assume every commit is permanent</b> — deleting a file does not delete it from history; rotate anything that was exposed.</li>
     </ul>
     <aside class="notes">The pull_request_target trap is worth a moment of attention: that trigger runs your workflow with your token and secrets against code from the pull request, which is how production keys have been exposed in the wild. The rule of thumb is short: untrusted code plus a write-scoped token is never acceptable. The lint rule that fails a build when a credential-shaped string is committed is the small, automatable version of the same habit.</aside>
@@ -757,7 +787,7 @@ test "$DEPLOYED" = "$GITHUB_SHA"                                         <span c
       <div class="card">
         <p><b>Public repositories</b> → free hosted runners.</p>
         <p><b>Private repositories</b> → a monthly minutes allowance (~2,000 on GitHub's Free plan — check current pricing; the number changes).</p>
-        <p><b>Minutes are wall-clock time.</b> A job that hangs for 10 minutes costs 10 minutes.</p>
+        <p><b>You are billed for elapsed time.</b> A job that hangs for ten minutes costs ten minutes.</p>
         <p>→ that is why every job here sets <code>timeout-minutes: 10</code>.</p>
       </div>
       <div class="card">
@@ -780,7 +810,7 @@ test "$DEPLOYED" = "$GITHUB_SHA"                                         <span c
       <tr><td><b>Change failure rate</b></td><td>what share of releases cause an incident?</td><td>every release needs a hotfix</td></tr>
       <tr><td><b>Time to restore</b></td><td>when it breaks, how fast is it corrected?</td><td>rollback takes hours</td></tr>
     </table>
-    <div class="mapping">CI/CD is not "we have a pipeline". It is <b>smaller batches, more often, safer each time</b>. A pipeline that takes 40 minutes trains people to batch large changes — the opposite of the intended outcome.</div>
+    <div class="mapping">CI/CD is not "we have a pipeline". It is <b>smaller changes, more often, each one safer</b>. A pipeline that takes forty minutes teaches people to save up large changes — the opposite of what you wanted.</div>
     <aside class="notes">If asked how you know the CI/CD approach is working, the answer is these four numbers and their trend. The counter-intuitive lesson: making the pipeline faster reduces lead time, but the bigger win is making it reliable, because a pipeline people distrust gets ignored. Also worth saying plainly: these metrics are measures of the delivery system, not of individuals — they are diagnostic, never a performance target for a person.</aside>
   </section>
 
@@ -804,12 +834,12 @@ test "$DEPLOYED" = "$GITHUB_SHA"                                         <span c
   <section class="slide">
     <h1>Evidence: this pipeline really ran 🏁</h1>
     <ul class="bullets">
-      <li>📦 <b>github.com/fontvu/cicd-lab</b> — the repository</li>
+      <li>📦 <b>github.com/&lt;your-name&gt;/cicd-lab</b> — the repository</li>
       <li>🤖 <b>/actions</b> — every run, every job, every log, publicly viewable</li>
       <li>🧪 <b>the matrix</b> — <code>test (node 20)</code> and <code>test (node 22)</code>, both successful</li>
       <li>⏭️ <b>the gate</b> — a non-<code>main</code> run: lint/test/build successful, deploy + smoke <b>skipped</b></li>
       <li>🌐 <b>the smoke job</b> — fetches the live site and compares its commit ID with the run</li>
-      <li>🚚 <b>the live site</b> — <b>fontvu.github.io/cicd-lab</b>, and <b>/BUILD_INFO.json</b> shows which commit built it</li>
+      <li>🚚 <b>the live site</b> — <b>&lt;your-name&gt;.github.io/cicd-lab</b>, and <b>/BUILD_INFO.json</b> shows which commit built it</li>
     </ul>
     <aside class="notes">Presenter script: open Actions, open the most recent successful run — six checks (lint, two test legs, build, deploy, smoke). Then open a run from a non-main branch: three successful and two skipped. Ask: was anything deployed? No — because the ref was not main. Same code, same controls, a different path. The BUILD_INFO detail is worth pointing out: the live site can tell you which commit it came from, so "it works on my machine" becomes checkable.</aside>
   </section>

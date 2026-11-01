@@ -1,15 +1,44 @@
 # 🧁 cicd-lab — the Magic Button, delivered automatically
 
 A tiny website (one big magic button 🪄 that counts presses) with a **real
-CI/CD pipeline** that checks and delivers it automatically on every push.
-Built to be learned from: zero dependencies, zero paid services, every line
-explained.
+CI/CD pipeline** that checks and publishes it on every push.
 
-> **Audience:** a developer in their first job, or a career changer. The
-> vocabulary here is the vocabulary you will hear in a real team review
-> (pipeline, matrix, artifact, environment, gate, smoke test) — but every
-> concept is explained from scratch, and the working lab is small enough to
-> read in one sitting.
+**What this is.** A working study, not a training course. I wanted to know
+whether I actually understood automated delivery — not whether I could
+recite its vocabulary — so I built the smallest pipeline that contains every
+part that matters, ran it, broke it on purpose, and wrote down what happened.
+The slide deck (`presentation.html`) is the argument; this repository is the
+evidence behind it.
+
+**What it is not.** It is not a tutorial written for a beginner's first hour.
+It assumes you can read code and use a terminal. Every jargon word is
+explained the first time it appears, but it is explained the way you would
+explain it to a colleague, not to a child.
+
+**Fork it and make it yours.** There is nothing personal in here: no
+accounts, no URLs, no secrets. Copy it, point it at your own repository, and
+run it — then change something and explain why *your* version is better.
+That is the exercise this lab was built for.
+
+## 🔤 The words, in plain English
+
+Every term this lab uses, in one line each. The glossary at the bottom is the
+same list in more detail; this is the version to skim before you start.
+
+| When you read… | It means… |
+|---|---|
+| **workflow** | the recipe file that tells the robot what to do |
+| **job** | one station on the line; it gets its own temporary machine |
+| **step** | one command inside a station |
+| **runner** | the temporary machine itself (thrown away after the job) |
+| **artifact** | the built output — the folder that is handed to the release step |
+| **matrix** | run the same job several times, once per version |
+| **gate** | a condition that decides whether a step runs at all |
+| **environment** | a named target (e.g. production) that can carry its own rules |
+| **smoke test** | a quick check, after release, that the live thing answers |
+| **lint** | a program that checks code against rules the team wrote down |
+| **OIDC** | a short-lived ID token instead of a stored password |
+| **CI / CD** | check every change automatically / publish it automatically |
 
 ## 🍋 A short analogy
 
@@ -52,7 +81,7 @@ clickable pipeline simulator where you break the build on purpose, a
 failure-triage walkthrough, and a quiz. **Open it in a browser for the
 guided tour.** It is one self-contained file — no internet needed, works even
 when emailed. And because `npm run build` copies it into `dist/`, the deck
-also goes live with the site: `https://<your-username>.github.io/cicd-lab/presentation.html` (this repo's own copy: <https://fontvu.github.io/cicd-lab/presentation.html>).
+also goes live with the site: `https://<your-username>.github.io/cicd-lab/presentation.html` (this repo's own copy: <https://<your-name>.github.io/cicd-lab/presentation.html>).
 
 ## 📋 Prerequisites (5 minutes, free)
 
@@ -183,10 +212,10 @@ Do this in order — it is the same order a senior engineer uses.
 
 1. **Read the failing step, not the whole log.** GitHub marks the failing step in red. The line above the error is usually the cause.
 2. **Reproduce locally.** `npm run lint` / `npm test` / `npm run build` — same command, same machine shape (Node 20 vs 22!). If it passes locally, check the Node version first; that is the #1 "works on my machine" cause.
-3. **Check WHICH matrix leg failed.** `test (node 20)` vs `test (node 22)`. A matrix failure is often version-specific, not logic-specific.
+3. **Check which version failed.** The two test entries are the same tests on two versions of Node — `test (node 20)` and `test (node 22)`. If only one is red, the problem is usually that version, not your logic.
 4. **Ask "is this my code or the pipeline?"** If `lint` fails on a file you did not touch, something else changed (a renamed script, a new dependency).
 5. **Do not weaken the test to make it green.** Changing an assertion to match the bug is how a bug becomes permanent. If the test is wrong, fix the test *and* say so in the PR.
-6. **Push a fix; never force-push to `main`.** Force-pushing rewrites history that others may have based work on.
+6. **Push a fix; never force-push to `main`.** A force-push replaces history that other people may already have built on.
 7. **If it is not your code and not your change**, say so in the PR and tag the owner. Silence is what turns a red build into a blocked release.
 
 ## ⏪ Rollback runbook (the deploy went out, the site is broken)
@@ -243,8 +272,8 @@ git push                          # pipeline redeploys the previous state
   minutes costs 10 minutes. That is why every job here sets
   `timeout-minutes: 10` — a cheap insurance policy against a hung network
   call.
-- **Caching** (`actions/cache`, or `cache:` in `setup-node`) reuses
-  downloaded dependencies between runs. Our lab has **zero dependencies**,
+- **Caching** keeps downloaded libraries between runs instead of fetching them
+  again (`actions/cache`, or `cache:` in `setup-node`). Our lab has **zero dependencies**,
   so there is nothing to cache — which is also why it installs instantly on
   every runner. Cache only what is expensive to recreate, and be careful:
   caches are shared across branches, so a poisoned cache is a real supply
