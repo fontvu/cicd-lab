@@ -18,7 +18,7 @@ jobs:
   lint: ...              # spell check — fast, parallel with test
   test: ...              # taste test — parallel with lint, on Node 20 AND 22
   build: ...             # pack dist/ — needs lint+test green
-  deploy: ...            # the truck — gated: main branch, not a PR
+  deploy: ...            # the release — gated: main branch, not a PR
   smoke: ...             # fetch the LIVE site and prove it works
 ```
 
@@ -56,7 +56,7 @@ on:
 ```
 
 - **What it does:** runs lint/test/build on every Pull Request targeting `main` — **before** it is merged.
-- **Why it's here:** this is the inspection moment. A PR is a proposal ("inspect my homework"); robots check it, but the gate in the deploy job keeps the truck parked.
+- **Why it's here:** this is the verification point. A PR is a change proposal; the automated checks run against it, and the gate in the deploy job keeps the release parked.
 - **What if removed:** PRs merge unchecked. The single most valuable safety moment of the whole pipeline disappears.
 
 ### 4. `on: workflow_dispatch`
@@ -97,7 +97,7 @@ concurrency:
 - **What it does:** all runs share one named "lane" (`pages`). A newer run **cancels** the older in-progress run instead of waiting behind it.
 - **Why it's here:** two runs racing to publish different versions of the same site would corrupt Pages. *Cancel* (not *wait*) is chosen because the older run's work is pointless once newer code exists — and cancelling saves runner minutes.
 - **The trade-off:** for a long production release you would flip this to `false` (queue instead of cancel) so a half-finished run is not killed mid-flight.
-- **What if removed:** double-push fast and two trucks race to the same doorstep.
+- **What if removed:** double-push fast and two deployments race to the same destination.
 
 ### 7. `timeout-minutes` — the job-level safety net
 
@@ -155,7 +155,7 @@ test:
 ```
 
 - Same scaffold as lint (checkout → setup-node → `npm test`), deliberately: independent jobs fail independently.
-- `npm test` is the bare command `node --test` — Node's built-in runner, nothing to install. **Bare on purpose:** it recursively discovers `test/*.test.js` itself. Passing a directory argument (`node --test test/`) is tempting but **breaks on Windows/macOS with Node ≥ 22** (nodejs/node#64555) — a great real-world example of "the robots check on machines you don't control".
+- `npm test` is the bare command `node --test` — Node's built-in runner, nothing to install. **Bare on purpose:** it recursively discovers `test/*.test.js` itself. Passing a directory argument (`node --test test/`) is tempting but **breaks on Windows/macOS with Node ≥ 22** (nodejs/node#64555) — a great real-world example of "the checks run on machines you don't control".
 - **The matrix:** `matrix.node-version: [20, 22]` means *run this job once per value*. The Actions tab shows two checks — `test (node 20)` and `test (node 22)`. This is the cheapest insurance in CI: your code must pass on every runtime you claim to support (`package.json` says `engines.node >= 20`).
 - `fail-fast: false` — do **not** cancel the other leg when one fails. You want to know about every broken runtime in one run, not discover them one at a time.
 - **Parallel with lint:** lint and test run at the same time on separate VMs (saves minutes). **Independent failure:** lint going red does not silently skip test — each job stands on its own.
@@ -177,7 +177,7 @@ build:
 - `npm run build` — runs `scripts/build.js`: wipes `dist/`, copies the site files in (including the slide deck), writes `dist/BUILD_INFO.json` (version, timestamp, commit sha).
 - `actions/upload-pages-artifact@v3` with `path: dist` — hands the `dist/` **box** to GitHub's artifact storage, where the deploy job can fetch it. The box is called an **artifact**. *Removed:* deploy job has nothing to publish.
 
-### 11. `jobs.deploy` — the delivery truck (and the gate)
+### 11. `jobs.deploy` — the release (and the gate)
 
 ```yaml
 deploy:
@@ -204,7 +204,7 @@ deploy:
   - manual *Run workflow* on `main` → deploys ✅ (not a PR, and ref is main)
   - any pull_request → **skipped** ⏭️ (proposing ≠ publishing)
   - push or manual run on any other branch → **skipped** ⏭️ (not `refs/heads/main`)
-  *Removed:* the truck would leave on every run — including PRs from forks. That is the one mistake this lab exists to prevent.
+  *Removed:* the deployment would proceed on every run — including PRs from forks. That is the one mistake this lab exists to prevent.
 - `permissions:` — the only job that can write to Pages. Everything else is read-only.
 - `environment: production` — names the **target environment**. In *Settings → Environments* you can attach **protection rules** to it: required reviewers, a wait timer, branch restrictions. Add "required reviewers" and this pipeline becomes **continuous delivery** (a human approves the release) instead of **continuous deployment** (it ships unattended). With no rules set, it runs straight through — which is what this lab does by default.
 - `outputs: page_url` — publishes the live URL so the **next** job (`smoke`) can use it as `needs.deploy.outputs.page_url`.
@@ -246,7 +246,7 @@ smoke:
                      build   ── uploads dist/ as a Pages artifact
                        │
                        ▼  if: main branch, and NOT a pull request
-                     deploy  ── publishes artifact to GitHub Pages 🚚
+                     deploy  ── publishes artifact to GitHub Pages
                        │        (environment: production)
                        ▼
                      smoke   ── fetches the live URL and verifies it 🌐

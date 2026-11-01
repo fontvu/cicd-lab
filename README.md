@@ -1,4 +1,4 @@
-# 🧁 cicd-lab — the Magic Button, delivered by robots
+# 🧁 cicd-lab — the Magic Button, delivered automatically
 
 A tiny website (one big magic button 🪄 that counts presses) with a **real
 CI/CD pipeline** that checks and delivers it automatically on every push.
@@ -11,27 +11,26 @@ explained.
 > concept is explained from scratch, and the working lab is small enough to
 > read in one sitting.
 
-## 🍋 First, the lemonade-stand story (ELI5)
+## 🍋 A short analogy
 
-- Imagine you run a lemonade stand.
-- Your **recipe** = your **code**.
-- Every time you change the recipe, you don't hand it straight to customers. First, **robot inspectors** spell-check and taste-test it — that's **CI** (Continuous Integration).
-- Only if the robots give a thumbs up does the **delivery truck** 🚚 drive the lemonade to your friends — that's **CD** (Continuous Delivery/Deployment).
-- If a robot finds a mistake (you forgot the sugar 🍬), the truck **never leaves**. You fix the recipe, the robots check again, then the truck goes.
-- That's all CI/CD is: robots check your work, robots deliver it, and broken stuff never reaches friends.
+- Imagine a small food business. The **recipe** is your **code**; the **customers** are the people who use what you build.
+- A change is never handed over directly. It first passes **automated checks** — a syntax review and a set of tests. That is **CI** (Continuous Integration).
+- Only once those checks pass is the build **released**. That is **CD** (Continuous Delivery/Deployment).
+- If a check finds a defect, the release **does not proceed**. The change is corrected, re-checked, and only then published.
+- In one line: changes are verified before they are published, so defects are contained before they reach users.
 
 ## 🏢 The same thing in workplace language
 
-| Kid version | Workplace version | Where it lives in this repo |
+| Concept | What it does | Where it lives in this repo |
 |---|---|---|
-| Robot inspectors check the recipe | **CI**: every change is automatically verified before it merges | `lint` + `test` jobs |
-| The delivery truck | **CD**: verified changes are published automatically | `build` → `deploy` jobs |
-| "Only from the main road" | **Release gate**: deploy only from a protected branch, never from a PR | the `if:` line in the `deploy` job |
-| The recipe card gets checked for typos | **Linting**: static rules that catch mistakes a compiler cannot | `scripts/lint.js` (50 checks) |
-| The taste test | **Automated tests**: a checklist that must pass for the change to be allowed | `test/` (12 tests) |
-| The packed box | **Artifact**: an immutable, versioned build output | `dist/` + `BUILD_INFO.json` |
-| "Did the parcel actually arrive?" | **Smoke test**: verify the live thing after deploying it | the `smoke` job |
-| The head chef signing the order | **Environment protection rules**: a human approves production releases | `environment: production` |
+| **CI** — Continuous Integration | every change is verified automatically before it may merge | `lint` + `test` jobs |
+| **CD** — Continuous Delivery / Deployment | verified changes are published automatically | `build` → `deploy` jobs |
+| **Release gate** | deploy only from a protected branch, never from a PR | the `if:` line in the `deploy` job |
+| **Linting** | static rules that catch mistakes a compiler cannot | `scripts/lint.js` (50 checks) |
+| **Automated tests** | a checklist that must pass for the change to be allowed | `test/` (12 tests) |
+| **Artifact** | an immutable, versioned build output | `dist/` + `BUILD_INFO.json` |
+| **Smoke test** | verify the live site after it is deployed | the `smoke` job |
+| **Environment protection rules** | a human approves production releases | `environment: production` |
 
 **Which flavour of CD is this?** Our pipeline deploys *automatically* once
 `main` is green — that is **continuous deployment**. Add a required reviewer
@@ -78,8 +77,8 @@ also goes live with the site: `https://<your-username>.github.io/cicd-lab/presen
    git commit -m "my first change"
    git push
    ```
-6. **Watch the robots**: click the *Actions* tab — five jobs run: lint, test (twice — Node 20 and Node 22), build, deploy, smoke. All green ✅.
-7. **See it live**: open `https://YOU.github.io/cicd-lab/` — your Magic Button, delivered by robots. Press it. 🎉
+6. **Watch the checks run**: click the *Actions* tab — five jobs run: lint, test (twice — Node 20 and Node 22), build, deploy, smoke. All successful.
+7. **See it live**: open `https://YOU.github.io/cicd-lab/` — your Magic Button, published by the pipeline. Press it.
 
 > 💻 **Windows note (PowerShell):** PowerShell 5.1 (the Windows default) does not understand `&&` chains, so every command in this README is given **one per line** — run them in PowerShell, Git Bash, or cmd and they all work. If you ever see a one-liner like `a && b && c` in other docs, split it into separate lines on Windows.
 
@@ -118,8 +117,8 @@ skip is a feature: it means the log tells you exactly where the chain broke.
 
 ## 🏠 Local Mode (no GitHub needed — Node optional)
 
-- `npm run lint` — robot spell-check (50 checks: syntax, HTML wiring, project consistency, secret scan, workflow shape).
-- `npm test` — robot taste-test (12 tests: 8 unit tests for the counter + 4 integration tests for the linter itself).
+- `npm run lint` — automated syntax and consistency checks (50 checks: syntax, HTML wiring, project consistency, secret scan, workflow shape).
+- `npm test` — the test suite (12 tests: 8 unit tests for the counter + 4 integration tests for the linter itself).
 - `npm run build` — pack the box into `dist/` (adds `BUILD_INFO.json`).
 - `npm start` — serve the **built** site at http://localhost:8080 (run `npm run build` first; the server prints a hint if you forget).
 - Why can't I just double-click `index.html`? → see Troubleshooting.
@@ -276,9 +275,9 @@ goal.
 **(a) Break it on purpose — watch the red X (10 min)**
 1. Open `test/counter.test.js`; in the first test change `assert.equal(c.value, 0)` to `assert.equal(c.value, 5)`.
 2. Commit + push.
-3. In the *Actions* tab watch: lint ✅ passes, test ❌ fails, and **build + deploy + smoke never run** — that's the safety net.
-4. Change it back, push → all green, site re-deploys.
-Lesson: red is good. The robots caught it before your friends did.
+3. In the *Actions* tab watch: lint passes, test fails, and **build + deploy + smoke do not execute** — that is the control working.
+4. Change it back, push → the run succeeds and the site is released again.
+Lesson: a failed check is a control working as intended — the defect was caught before release, not after.
 
 **(b) Add a new test (5 min)** — append to `test/counter.test.js`:
 ```js
@@ -296,7 +295,7 @@ Push, watch 12 tests pass. Lesson: adding tests is easy and safe.
 3. Edit `scripts/build.js`: add `'about.html'` to the copy list.
 4. Push → the build log shows `copied about.html`; visit `https://YOU.github.io/cicd-lab/about.html`.
 
-Why is keeping the script tag safe? `app.js` is written defensively: before touching anything it checks `if (document.getElementById('magic-button')) { ... }`. `about.html` has no magic button, so `app.js` simply does nothing there instead of crashing. Without that guard, the page would throw a `TypeError` (`countEl` would be `null`) — a real bug, exactly the kind the robots love to catch. (Try deleting the guard and see for yourself.)
+Why is keeping the script tag safe? `app.js` is written defensively: before touching anything it checks `if (document.getElementById('magic-button')) { ... }`. `about.html` has no magic button, so `app.js` simply does nothing there instead of crashing. Without that guard, the page would throw a `TypeError` (`countEl` would be `null`) — a real bug, exactly the kind automated checks are designed to catch. (Try deleting the guard and see for yourself.)
 Lesson: the build step decides what ships — you just taught it a new file.
 
 **(d) Open a Pull Request — notice deploy is skipped (the gate) (10 min)**
@@ -304,14 +303,14 @@ Lesson: the build step decides what ships — you just taught it a new file.
 2. Edit the title in `index.html`, commit, `git push -u origin change-title`.
 3. Open a PR in GitHub. Watch the pipeline: lint/test/build run; **deploy and smoke are skipped** (grey).
 4. Merge the PR → the push to `main` triggers the pipeline again, and now deploy + smoke run.
-Lesson: PRs are "inspect my homework"; pushes to main are "publish it". The `if:` in the deploy job is the gate: deploy only when the branch is `main` **and** the event is not a pull request.
+Lesson: a PR is a change proposal; a push to main is a release. The `if:` in the deploy job is the gate: deploy only when the branch is `main` **and** the event is not a pull request.
 
 **(e) Add a human approval gate (10 min) — no YAML editing needed**
 1. Repo *Settings → Environments* → you will see `production` (created by the deploy job).
 2. Open it → *Required reviewers* → add yourself.
 3. Push any change to `main`. The deploy job now waits ⏳ for you to click **Approve** in the Actions tab (or in the environment's page).
 4. Click Approve → deploy continues → smoke runs → green.
-Lesson: CD can still require a human before the truck leaves. This is the difference between *continuous delivery* and *continuous deployment*.
+Lesson: CD can still require a human before the release proceeds. This is the difference between *continuous delivery* and *continuous deployment*.
 
 **(f) Make the smoke test earn its keep (10 min)**
 1. In `scripts/build.js`, temporarily comment out the copy of `index.html`.
